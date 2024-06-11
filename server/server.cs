@@ -79,15 +79,16 @@ namespace Server
             this.Room = null;
         }*/
 
+        // 使用换行符做分隔符
         private async void Write()
         {
+            StreamWriter writer = new(stream);
             while (true)
             {
                 await msg_sem.WaitAsync();
                 while (messages.Count > 0)
                 {
-                    var bytes = Encoding.UTF8.GetBytes(messages.Dequeue() + '\n');
-                    await stream.WriteAsync(bytes);
+                    await writer.WriteLineAsync(messages.Dequeue());
                 }
             }
         }
@@ -103,7 +104,7 @@ namespace Server
                 StringBuilder messageData = new StringBuilder();
                 // Read the client's test message.
                 string? msg = await sr.ReadLineAsync();
-                if (msg == null) { continue; } // ???
+                if (msg == null) { break; } // ???
                 Process.ProcessMessage(this, msg);
             }
         }
