@@ -19,7 +19,7 @@ namespace Server
         private Queue<string> messages = new();
 
         public int Id { get; private set; }
-        public string Name { get; private set; } = string.Empty;
+        public string Name { get; private set; } = "default name";
 
         public int num { get; private set; } = -1; // 处于房间中的序号，-1表示未进入任何房间
         public Room? Room { get; private set; } = null; // 进入的房间
@@ -56,10 +56,10 @@ namespace Server
         public bool TryJoinRoom(int roomid)
         {
             if (num != -1) return false; // throw
-            Room? room = null;
-            if (!GlobalRoom.TryGetRoom(roomid, room))
+            Room? room;
+            if (!GlobalRoom.TryGetRoom(roomid, out room))
                 return false;
-            return true;
+            return room.Join(this);
         }
         public bool TryCreateRoom()
         {
@@ -95,7 +95,7 @@ namespace Server
 
         private async void Read()
         {
-            // Read the  message sent by the client.
+            // Read the message sent by the client.
             // The client signals the end of the message using the
             // '\n' marker.
             StreamReader sr = new(stream);
@@ -142,21 +142,9 @@ namespace Server
         {
             return rooms[roomid];
         }
-        static public bool TryGetRoom(int roomid, Room? room)
+        static public bool TryGetRoom(int roomid, out Room? room)
         {
             return rooms.TryGetValue(roomid, out room);
-        }
-    }
-
-    internal class Room
-    {
-        public int Id { get; private set; }
-        private List<User> users = new(); // 其中users[0]为房主
-
-        public Room(int roomid, User host)
-        {
-            Id = roomid;
-            users.Add(host);
         }
     }
 
@@ -178,7 +166,9 @@ namespace Server
                 TcpClient client = await listener.AcceptTcpClientAsync();
                 var sslstream = await ProcessClient(client);
                 if (sslstream is not null)
+                {
                     GlobalRoom.Join(new User(sslstream));
+                }
             }
         }
 
@@ -208,42 +198,6 @@ namespace Server
                 return null;
             }
             return sslStream;
-        }
-    }
-
-    static class Process
-    {
-        static private SemaphoreSlim sem = new(1, 1);
-        static private Queue<(User, string)> ProcessQueue = new();
-
-        static public void Start()  // 创建一个线程处理信息
-        {
-            Thread t = new(new ThreadStart(Processing));
-            t.Start();
-        }
-
-        static public void ProcessMessage(User user, string message)
-        {
-            ProcessQueue.Enqueue((user, message));
-            sem.Release();
-        }
-
-        static private async void Processing()
-        {
-            while (true)
-            {
-                await sem.WaitAsync();
-                while (ProcessQueue.Count > 0)
-                    process(ProcessQueue.Dequeue());
-            }
-        }
-
-        static private void process((User, string) pair)
-        {
-            User user;
-            string msg;
-            (user, msg) = pair;
-            //TODO
         }
     }
 }
