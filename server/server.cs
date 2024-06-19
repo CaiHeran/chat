@@ -8,6 +8,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Server
@@ -19,9 +20,9 @@ namespace Server
         private Queue<string> messages = new();
 
         public int Id { get; private set; }
-        public string Name { get; private set; } = "default name";
+        public string Name { get; set; } = "default name";
 
-        public int num { get; private set; } = -1; // 处于房间中的序号，-1表示未进入任何房间
+        public int Num { get; private set; } = -1; // 处于房间中的序号，-1表示未进入任何房间
         public Room? Room { get; private set; } = null; // 进入的房间
 
         public User(SslStream stream)
@@ -53,29 +54,38 @@ namespace Server
             msg_sem.Release();
         }
 
-        public bool TryJoinRoom(int roomid)
+        public int TryJoinRoom(int roomid)
         {
-            if (num != -1) return false; // throw
+            if (this.Num != -1) return 1;
             Room? room;
             if (!GlobalRoom.TryGetRoom(roomid, out room))
-                return false;
-            return room.Join(this);
+                return 2;   // 不存在此房间
+            int num = room.Join(this);
+            if (num == -1)
+            {
+                return 3;
+            }
+            else
+            {
+                Num = num;
+                return 0;
+            }
         }
         public bool TryCreateRoom()
         {
             if (this.Room is not null)
                 return false;
             this.Room = GlobalRoom.CreateRoom(this);
-            num = 0;
+            Num = 0;
             return true;
         }
         /* 以后再写
         public void LeaveRoom()
         {
-            if (num == 0)   // 房主退出房间即解散房间
+            if (Num == 0)   // 房主退出房间即解散房间
             {
             }
-            num = -1;
+            Num = -1;
             this.Room = null;
         }*/
 
@@ -167,7 +177,9 @@ namespace Server
                 var sslstream = await ProcessClient(client);
                 if (sslstream is not null)
                 {
-                    GlobalRoom.Join(new User(sslstream));
+                    var newuser = new User(sslstream);
+                    GlobalRoom.Join(newuser);
+                    newuser.Send($$"""{"type":01, "id":{{newuser.Id}}}""");
                 }
             }
         }
@@ -183,7 +195,6 @@ namespace Server
                 await sslStream.AuthenticateAsServerAsync(cert2, clientCertificateRequired: true, checkCertificateRevocation: false);
 
                 // Display the properties and settings for the authenticated stream.
-
             }
             catch (AuthenticationException e)
             {
