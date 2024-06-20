@@ -57,6 +57,7 @@
     struct RoomMessage : Info
     {
         public const int type = 21;
+        public int id;  // room id
         public string message;
     }
 }

@@ -78,7 +78,8 @@ namespace Server
             case 22: // 在房间中发送消息
             {
                 var msg = JsonSerializer.Deserialize<RoomMessage>(msgstr);
-                user.Room.Deliver(msg.message);
+                if (user.Room is not null && user.Room.Id == msg.id)
+                    user.Room.Deliver(msg.message);
                 break;
             }
             }
