@@ -25,7 +25,7 @@ namespace Server
                 var sslstream = await ProcessClient(client);
                 if (sslstream is not null)
                 {
-                    var newuser = new User(sslstream);
+                    User newuser = new(sslstream);
                     GlobalRoom.Join(newuser);
                     newuser.Send($$"""{"type":01, "id":{{newuser.Id}}}""");
                 }
@@ -40,7 +40,7 @@ namespace Server
             // Authenticate the server but don't require the client to authenticate.
             try
             {
-                await sslStream.AuthenticateAsServerAsync(cert2, clientCertificateRequired: true, checkCertificateRevocation: false);
+                await sslStream.AuthenticateAsServerAsync(cert2);
 
                 // Display the properties and settings for the authenticated stream.
             }

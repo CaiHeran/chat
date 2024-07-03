@@ -27,9 +27,9 @@ namespace Server
             Id = get_new_id();
         }
 
+        private static int userid = 10;
         private static int get_new_id()
         {
-            int userid = 10;
             return ++userid;
         }
 
@@ -88,13 +88,16 @@ namespace Server
         // 使用换行符做分隔符
         private async void Writer()
         {
+            Console.WriteLine($"[{Id}] Start to write");
             StreamWriter writer = new(stream);
             while (true)
             {
                 await msg_sem.WaitAsync();
                 while (messages.Count > 0)
                 {
-                    await writer.WriteLineAsync(messages.Dequeue());
+                    var msg = messages.Dequeue();
+                    await writer.WriteLineAsync(msg);
+                    Console.WriteLine($"Wrote to [{Id}]: {msg}");
                 }
             }
         }
@@ -104,13 +107,15 @@ namespace Server
             // Read the message sent by the client.
             // The client signals the end of the message using the
             // '\n' marker.
+            Console.WriteLine($"[{Id}] Start to read");
             StreamReader sr = new(stream);
             while (true)
             {
-                StringBuilder messageData = new StringBuilder();
                 // Read the client's test message.
+                Console.WriteLine($"[{Id}] waiting");
                 string? msg = await sr.ReadLineAsync();
-                if (msg == null) { break; } // ???
+                if (msg == null) { Console.WriteLine($"[{Id}] Break."); break; } // ???
+                Console.WriteLine($"Received from [{Id}]: {msg}");
                 Process.ProcessMessage(this, msg);
             }
         }
@@ -123,6 +128,7 @@ namespace Server
 
         static public void Join(User user)
         {
+            Console.WriteLine($"[{user.Id}] Connected");
             users.Add(user.Id, user);
             user.Start();
         }

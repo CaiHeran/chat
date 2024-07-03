@@ -28,8 +28,7 @@ namespace Client
                 false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate),
                 null
-                );
-            // The server name must match the name on the server certificate.
+            );
             try
             {
                 sslStream.AuthenticateAsClient("");
@@ -41,9 +40,7 @@ namespace Client
                 {
                     Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
                 }
-                Console.WriteLine("Authentication failed - closing the connection.");
                 client.Close();
-                Environment.Exit(0);
                 return;
             }
             stream = sslStream;
@@ -64,7 +61,9 @@ namespace Client
                 await msg_sem.WaitAsync();
                 while (messages.Count > 0)
                 {
-                    await writer.WriteLineAsync(messages.Dequeue());
+                    var msg = messages.Dequeue();
+                    await writer.WriteLineAsync(msg);
+                    FormTest.formtest.AddMessage("Send:"+msg);
                 }
             }
         }
@@ -89,15 +88,14 @@ namespace Client
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
-            Console.WriteLine("Server's certificate:\n{0}\n", certificate);
-            Console.Write("Authenticate? y/n ");
-        _Check:
-            switch (Console.ReadKey().Key)
-            {
-            case ConsoleKey.Y: return true;
-            case ConsoleKey.N: return false;
-            default: goto _Check;
-            }
+            string information = $"Server's certificate:\n{certificate}\nAuthenticate?";
+
+            var res = MessageBox.Show($"{information}",//对话框的显示内容
+              "确认", //对话框的标题 
+              MessageBoxButtons.YesNo,
+              MessageBoxIcon.Information);
+
+            return res == DialogResult.Yes;
         }
     }
 }
