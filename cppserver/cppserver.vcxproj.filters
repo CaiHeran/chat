@@ -18,19 +18,16 @@
     <ClCompile Include="cppserver.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="server.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="server.hpp">
+      <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="basics.hpp">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="headers.hpp">
-      <Filter>源文件</Filter>
+      <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="server.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="basics.hpp">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

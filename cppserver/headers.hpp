@@ -1,4 +1,6 @@
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <fstream>
 #include <format>
@@ -10,7 +12,8 @@
 #include <set>
 #include <vector>
 
-#include <boost/asio.hpp>
+#include <gsl/gsl>
+#include <asio.hpp>
 #include <fmt/color.h>
 #include <fmt/xchar.h>
 #include <nlohmann/json.hpp>

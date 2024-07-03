@@ -3,10 +3,10 @@
 #define __SERVER_CPP__
 
 #include "headers.hpp"
+#include "basics.hpp"
 
 using fmt::print, fmt::println;
 
-namespace asio = boost::asio;
 using asio::ip::tcp;
 using asio::awaitable;
 using asio::co_spawn;
@@ -172,7 +172,7 @@ private:
         {
             if (write_msgs.empty())
             {
-                boost::system::error_code ec;
+                asio::error_code ec;
                 co_await timer_.async_wait(asio::redirect_error(use_awaitable, ec));
             }
             else
@@ -209,7 +209,7 @@ private:
     Info info_;
 
     tcp::socket socket_;
-    boost::asio::steady_timer timer_;
+    asio::steady_timer timer_;
     std::deque<std::string> write_msgs;
 };
 

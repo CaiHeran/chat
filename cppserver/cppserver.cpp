@@ -1,5 +1,5 @@
 
-#include "server.cpp"
+#include "server.hpp"
 
 void print_ipv6_address()
 {
@@ -7,7 +7,7 @@ void print_ipv6_address()
 	asio::io_service io_service;
 
     tcp::resolver resolver(io_service);
-    tcp::resolver::query query(boost::asio::ip::host_name(),"");
+    tcp::resolver::query query(asio::ip::host_name(),"");
     tcp::resolver::iterator it=resolver.resolve(query);
 
     while (it!=tcp::resolver::iterator())
@@ -31,7 +31,7 @@ try
 
 	print_ipv6_address();
 
-	boost::asio::io_context io_context(1);
+	asio::io_context io_context(1);
 
 	asio::ip::port_type port = std::atoi(argv[1]);
 
@@ -42,7 +42,7 @@ try
 		listener(tcp::acceptor(io_context, {tcp::v4(), port})),
 		detached);
 
-	boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+	asio::signal_set signals(io_context, SIGINT, SIGTERM);
 	signals.async_wait([&](auto, auto){ io_context.stop(); });
 
 	io_context.run();
