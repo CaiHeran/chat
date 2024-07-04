@@ -5,17 +5,19 @@ using System.Windows.Forms;
 
 namespace Client
 {
-    public partial class Form1 : Form
+    public partial class FormConnect : Form
     {
+
+        public static FormConnect formconnect = new FormConnect();
         //
-        // Form1
+        // FormConnect
         //
-        public Form1()
+        public FormConnect()
         {
             InitializeComponent();
             //
             //
-            // Form1
+            // FormConnect
             this.ControlBox = false;
             //
             //
@@ -48,9 +50,13 @@ namespace Client
                 return;
             }
 
-            FormTest.formtest = new FormTest();
+            /*
+             * this.Hide();
+             * FormTest.formtest.Show();
+             */
+
             this.Hide();
-            FormTest.formtest.Show();
+            FormHome.formhome.Show();
         }
         //
         // button_exit_Click

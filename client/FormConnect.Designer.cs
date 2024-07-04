@@ -1,6 +1,6 @@
 ﻿namespace Client
 {
-    partial class Form1
+    partial class FormConnect
     {
         /// <summary>
         ///  Required designer variable.
@@ -117,13 +117,14 @@
             // 
             // pictureBox_background
             // 
+            pictureBox_background.BackColor = SystemColors.ActiveBorder;
             pictureBox_background.Location = new Point(0, 0);
             pictureBox_background.Name = "pictureBox_background";
             pictureBox_background.Size = new Size(100, 50);
             pictureBox_background.TabIndex = 7;
             pictureBox_background.TabStop = false;
             // 
-            // Form1
+            // FormConnect
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -137,7 +138,7 @@
             Controls.Add(textBox_host);
             Controls.Add(label1);
             MaximizeBox = false;
-            Name = "Form1";
+            Name = "FormConnect";
             Text = "游戏标题";
             ((System.ComponentModel.ISupportInitialize)pictureBox_background).EndInit();
             ResumeLayout(false);
