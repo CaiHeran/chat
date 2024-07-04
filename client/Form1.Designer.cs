@@ -33,8 +33,12 @@
             textBox_host = new TextBox();
             textBox_port = new TextBox();
             button_connect = new Button();
+            button_exit = new Button();
+            button_mini = new Button();
+            pictureBox_background = new PictureBox();
             label1 = new Label();
             label2 = new Label();
+            ((System.ComponentModel.ISupportInitialize)pictureBox_background).BeginInit();
             SuspendLayout();
             // 
             // label1
@@ -91,18 +95,51 @@
             button_connect.UseVisualStyleBackColor = true;
             button_connect.Click += button_connect_Click;
             // 
+            // button_exit
+            // 
+            button_exit.Location = new Point(366, 259);
+            button_exit.Name = "button_exit";
+            button_exit.Size = new Size(75, 23);
+            button_exit.TabIndex = 5;
+            button_exit.Text = "退出";
+            button_exit.UseVisualStyleBackColor = true;
+            button_exit.Click += button_exit_Click;
+            // 
+            // button_mini
+            // 
+            button_mini.Location = new Point(266, 259);
+            button_mini.Name = "button_mini";
+            button_mini.Size = new Size(75, 23);
+            button_mini.TabIndex = 6;
+            button_mini.Text = "最小化";
+            button_mini.UseVisualStyleBackColor = true;
+            button_mini.Click += button_mini_Click;
+            // 
+            // pictureBox_background
+            // 
+            pictureBox_background.Location = new Point(0, 0);
+            pictureBox_background.Name = "pictureBox_background";
+            pictureBox_background.Size = new Size(100, 50);
+            pictureBox_background.TabIndex = 7;
+            pictureBox_background.TabStop = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
+            Controls.Add(pictureBox_background);
+            Controls.Add(button_mini);
+            Controls.Add(button_exit);
             Controls.Add(button_connect);
             Controls.Add(textBox_port);
             Controls.Add(label2);
             Controls.Add(textBox_host);
             Controls.Add(label1);
+            MaximizeBox = false;
             Name = "Form1";
-            Text = "Form1";
+            Text = "游戏标题";
+            ((System.ComponentModel.ISupportInitialize)pictureBox_background).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -114,5 +151,8 @@
         private Label label2;
         private TextBox textBox_port;
         private Button button_connect;
+        private Button button_exit;
+        private Button button_mini;
+        private PictureBox pictureBox_background;
     }
 }
