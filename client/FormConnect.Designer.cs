@@ -35,31 +35,31 @@
             button_connect = new Button();
             button_exit = new Button();
             button_mini = new Button();
-            pictureBox_background = new PictureBox();
             label1 = new Label();
             label2 = new Label();
-            ((System.ComponentModel.ISupportInitialize)pictureBox_background).BeginInit();
             SuspendLayout();
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Font = new Font("Microsoft YaHei UI", 10.5F);
-            label1.Location = new Point(43, 89);
+            label1.BackColor = Color.Transparent;
+            label1.Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label1.Location = new Point(36, 88);
             label1.Margin = new Padding(3, 0, 0, 0);
             label1.Name = "label1";
-            label1.Size = new Size(51, 20);
+            label1.Size = new Size(58, 21);
             label1.TabIndex = 0;
             label1.Text = "服务器";
             // 
             // label2
             // 
             label2.AutoSize = true;
-            label2.Font = new Font("Microsoft YaHei UI", 10.5F);
-            label2.Location = new Point(292, 89);
+            label2.BackColor = Color.Transparent;
+            label2.Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            label2.Location = new Point(287, 88);
             label2.Margin = new Padding(3, 0, 0, 0);
             label2.Name = "label2";
-            label2.Size = new Size(37, 20);
+            label2.Size = new Size(42, 21);
             label2.TabIndex = 2;
             label2.Text = "端口";
             // 
@@ -115,21 +115,14 @@
             button_mini.UseVisualStyleBackColor = true;
             button_mini.Click += button_mini_Click;
             // 
-            // pictureBox_background
-            // 
-            pictureBox_background.BackColor = SystemColors.ActiveBorder;
-            pictureBox_background.Location = new Point(0, 0);
-            pictureBox_background.Name = "pictureBox_background";
-            pictureBox_background.Size = new Size(100, 50);
-            pictureBox_background.TabIndex = 7;
-            pictureBox_background.TabStop = false;
-            // 
             // FormConnect
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackgroundImage = client.Properties.Resources.background2;
+            BackgroundImageLayout = ImageLayout.Stretch;
             ClientSize = new Size(464, 321);
-            Controls.Add(pictureBox_background);
+            ControlBox = false;
             Controls.Add(button_mini);
             Controls.Add(button_exit);
             Controls.Add(button_connect);
@@ -140,7 +133,6 @@
             MaximizeBox = false;
             Name = "FormConnect";
             Text = "游戏标题";
-            ((System.ComponentModel.ISupportInitialize)pictureBox_background).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -154,6 +146,5 @@
         private Button button_connect;
         private Button button_exit;
         private Button button_mini;
-        private PictureBox pictureBox_background;
     }
 }

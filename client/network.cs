@@ -63,7 +63,6 @@ namespace Client
                 {
                     var msg = messages.Dequeue();
                     await writer.WriteLineAsync(msg);
-                    FormTest.formtest.AddMessage("Send:"+msg);
                 }
             }
         }

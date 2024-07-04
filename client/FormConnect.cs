@@ -15,19 +15,6 @@ namespace Client
         public FormConnect()
         {
             InitializeComponent();
-            //
-            //
-            // FormConnect
-            this.ControlBox = false;
-            //
-            //
-            // pictureBox_background
-            pictureBox_background.Location = new System.Drawing.Point(0, 0);
-            pictureBox_background.Size = this.Size;
-            pictureBox_background.SendToBack();
-            Image imagefile = Image.FromFile("images/background2.jpg");
-            pictureBox_background.Image = imagefile;
-            pictureBox_background.SizeMode = PictureBoxSizeMode.AutoSize;//6这真的很智能
         }
         // buttons
         // button_connect
@@ -76,7 +63,6 @@ namespace Client
         private void button_mini_Click(object sender, EventArgs e)
         {
             this.WindowState = FormWindowState.Minimized;
-            pictureBox_background.Size = this.Size;
         }
     }
 }
