@@ -134,11 +134,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cppserver.cpp" />
-    <ClCompile Include="server.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basics.hpp" />
+    <ClInclude Include="cert.hpp" />
     <ClInclude Include="headers.hpp" />
+    <ClInclude Include="server.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

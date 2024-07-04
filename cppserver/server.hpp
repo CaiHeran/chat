@@ -4,6 +4,7 @@
 
 #include "headers.hpp"
 #include "basics.hpp"
+#include "cert.hpp"
 
 using fmt::print, fmt::println;
 
@@ -81,13 +82,13 @@ public:
         }
     };
 
-    User(tcp::socket socket)
+    User(asio::ssl::stream<tcp::socket> socket)
       : socket_(std::move(socket)),
         timer_(socket_.get_executor())
     {
         info_.id = _new_id();
         fmt::println("{} connected, id: {}",
-            socket_.remote_endpoint().address().to_string(), info_.id);
+            socket_.lowest_layer().remote_endpoint().address().to_string(), info_.id);
         timer_.expires_at(std::chrono::steady_clock::time_point::max());
     }
 
@@ -98,14 +99,8 @@ public:
 
     void start()
     {
-        global_room.join(shared_from_this());
-
         co_spawn(socket_.get_executor(),
-            [self = shared_from_this()] {return self->reader();},
-            detached);
-
-        co_spawn(socket_.get_executor(),
-            [self = shared_from_this()] {return self->writer();},
+            [self = shared_from_this()] {return self->do_shake_hands();},
             detached);
     }
 
@@ -150,12 +145,30 @@ public:
     bool join_room(int room_id);
 
 private:
+    awaitable<void> do_shake_hands()
+    {
+        co_await socket_.async_handshake(asio::ssl::stream_base::server, use_awaitable);
+
+        global_room.join(shared_from_this());
+
+        co_spawn(socket_.get_executor(),
+            [self = shared_from_this()] {return self->reader();},
+            detached);
+
+        co_spawn(socket_.get_executor(),
+            [self = shared_from_this()] {return self->writer();},
+            detached);
+
+        deliver(fmt::format(R"({{"type":10,"id":{}}})", id()));
+    }
+
     awaitable<void> reader()
     try {
+        fmt::println("Start to read from {}", info_.id);
         for (std::string s;;)
         {
             std::size_t n = co_await asio::async_read_until(socket_,
-                asio::dynamic_buffer(s, 256), '\0', use_awaitable);
+                asio::dynamic_buffer(s, 256), '\n', use_awaitable);
             std::string_view sv(s.data(), s.data()+n);
             fmt::println("Receive from {}: {}", info_.id, sv);
             process(shared_from_this(), json::parse(sv));
@@ -168,7 +181,7 @@ private:
 
     awaitable<void> writer()
     try {
-        while (socket_.is_open())
+        while (socket_.lowest_layer().is_open())
         {
             if (write_msgs.empty())
             {
@@ -177,6 +190,8 @@ private:
             }
             else
             {
+                fmt::println("Sending:{}", write_msgs.front());
+                write_msgs.front()[write_msgs.front().size()] = '\n';
                 co_await asio::async_write(socket_,
                     asio::buffer(write_msgs.front().data(), write_msgs.front().size()+1), use_awaitable);
                 write_msgs.pop_front();
@@ -191,7 +206,7 @@ private:
     {
         println("{} disconnected", id());
         global_room.leave(shared_from_this());
-        socket_.close();
+        socket_.shutdown();
         timer_.cancel();
     }
 
@@ -208,17 +223,45 @@ private:
     PlayRoom_ptr room_ptr;
     Info info_;
 
-    tcp::socket socket_;
+    asio::ssl::stream<tcp::socket> socket_;
     asio::steady_timer timer_;
     std::deque<std::string> write_msgs;
 };
 
-awaitable<void> listener(tcp::acceptor acceptor)
+awaitable<void> listen(tcp::acceptor acceptor_, std::string CN = "The Server")
 {
-    for (;;)
+    constexpr std::string_view DHparam =
+R"(-----BEGIN DH PARAMETERS-----
+MIICDAKCAgEAwqeHU/77gDqJ3XkFYjLNEDpVomUkbffJnsQxQ6saSAhmu18IEW6A
+eCg9FWGJZgmLxg2fj6S8nGvkv/8wXWRl0+GYiKOqOTBsqTI+i5YSvQalzvkoMt6g
+GInOred27t7pw/W1NY8Kt0vijRc+2s+tdep3wPlsCmfTWaztygXE65iWhhMYmFda
+TacRh1M7ruEqRNVuiT62HpGMremEEPLOXHNv59wVatU1MimYjMnpa4+8N5NRz6ON
+llV+ICnZvh5oFdSZ3KMQ/rNHkjwAbhxJt5SCiOduwzhohrqeSz2Y5XlKWU/G8PeD
+AONYX3sahhO3mWnji91EtvaBDS/V24sFuLJgH/WlA7H/BxFAdH1VM7ELrik1PAJ/
+Fwx3vQkX8z3wiW+oPzECbIlOPGHUHdlo7eT/dK5iRpCbQrVNfjA3sUb6VSURW3Pk
+an+2IU7h8dssboaa4lHOw1Psf6/37RSoQSgZRLHb9/gijnUXywVqfJSL5AFIxL1B
+UkANOCgI6LfgOkAnDCm/C3DeLKd40ScX4gxWKfUvegsUaPH+WGXlEVSht89OLWKD
+lUSIRWJsJ6RFtCiY58x7Cj7kR7OihdehNDRMfNa1M2xrsiJiPtvoEqDaWgxDjyza
+NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
+-----END DH PARAMETERS-----
+)";
+    asio::ssl::context context_(asio::ssl::context::tls);
+
+    context_.set_options(
+        asio::ssl::context::default_workarounds
+        | asio::ssl::context::no_tlsv1
+        | asio::ssl::context::no_tlsv1_1
+        | asio::ssl::context::single_dh_use);
+
+    auto [cert, prikey] = make_cert(CN);
+    context_.use_certificate(asio::const_buffer(cert.c_str(), cert.size()), asio::ssl::context::pem);
+    context_.use_private_key(asio::const_buffer(prikey.c_str(), prikey.size()), asio::ssl::context::pem);
+    context_.use_tmp_dh(asio::const_buffer(DHparam.data(), DHparam.size()));
+
+    while (true)
     {
         std::make_shared<User>(
-            co_await acceptor.async_accept(use_awaitable)
+            asio::ssl::stream<tcp::socket>(co_await acceptor_.async_accept(use_awaitable), context_)
         )->start();
     }
 }
@@ -448,13 +491,21 @@ void process(User_ptr p, json info)
 {
     switch (info["type"].get<int>()) // info type
     {
+    // 注册
     case 1: {
         p->parse_info(info);
         info.emplace("id", p->info().id);
         p->deliver(info.dump());
         break;
     }
+    // 修改个人信息
     case 10: {
+        p->parse_info(info);
+        p->deliver(info.dump());
+        break;
+    }
+    // 创建房间
+    case 20: {
         Expects(!p->room());
         p->create_room();
         json info {
@@ -464,7 +515,8 @@ void process(User_ptr p, json info)
         p->deliver(info.dump());
         break;
     }
-    case 11: {
+    // 加入房间
+    case 21: {
         bool ec = ! p->join_room(info["id"].get<int>());
         if (ec) {
             json info {
@@ -475,13 +527,20 @@ void process(User_ptr p, json info)
         }
         break;
     }
-    case 20: {
+    // 在房间中发送信息
+    case 22: {
+        //TODO check info["id"]==p->room().id();
+        p->room()->deliver(info["message"]);
+        break;
+    }
+
+    case 30: {
         //TODO: check whether p is the host
         p->room()->new_game(info);
         p->room()->deliver_gameinfo();
         break;
     }
-    case 21: {
+    case 31: {
         int order = p->get_order();
         bool ec = ! p->room()->push_op(order, info["op"]);
         json info {
@@ -491,6 +550,8 @@ void process(User_ptr p, json info)
         p->deliver(info.dump());
         break;
     }
+    default:
+        ;//TODO
     }
 }
 

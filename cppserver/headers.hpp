@@ -14,6 +14,7 @@
 
 #include <gsl/gsl>
 #include <asio.hpp>
+#include <asio/ssl.hpp>
 #include <fmt/color.h>
 #include <fmt/xchar.h>
 #include <nlohmann/json.hpp>

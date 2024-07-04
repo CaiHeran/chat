@@ -10,37 +10,37 @@ void print_ipv6_address()
     tcp::resolver::query query(asio::ip::host_name(),"");
     tcp::resolver::iterator it=resolver.resolve(query);
 
+	fmt::println("Server IPv6 addresses: ");
     while (it!=tcp::resolver::iterator())
     {
         asio::ip::address addr = (it++)->endpoint().address();
         if (!addr.is_v6()) continue;
 		auto addr6 = addr.to_v6();
-        std::cout << "Local IPv6 address: " << addr6 << std::endl;
+		fmt::println("{}", addr6.to_string());
     }
 }
 
 int main(int argc, char* argv[])
 {
-try
-{
+	asio::ip::port_type port;
 	if (argc < 2)
 	{
-		std::cerr << "Usage: server <port>\n";
-		return 1;
+		port = 23456;
+	}
+	else {
+		port = std::atoi(argv[1]);
 	}
 
+	fmt::println("This server is running on port {}.", port);
+try
+{
 	print_ipv6_address();
 
 	asio::io_context io_context(1);
 
-	asio::ip::port_type port = std::atoi(argv[1]);
-
-	co_spawn(io_context,
-		listener(tcp::acceptor(io_context, {tcp::v6(), port})),
-		detached);
-	co_spawn(io_context,
-		listener(tcp::acceptor(io_context, {tcp::v4(), port})),
-		detached);
+	co_spawn(io_context, listen(tcp::acceptor(io_context, {tcp::v6(), port})), detached);
+	
+	fmt::println("Listening...");
 
 	asio::signal_set signals(io_context, SIGINT, SIGTERM);
 	signals.async_wait([&](auto, auto){ io_context.stop(); });

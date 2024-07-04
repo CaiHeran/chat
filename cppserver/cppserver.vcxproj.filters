@@ -18,15 +18,18 @@
     <ClCompile Include="cppserver.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="server.hpp">
-      <Filter>头文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="headers.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="basics.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="server.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cert.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
