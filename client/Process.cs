@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
 
 using Info;
 
@@ -17,8 +18,7 @@ namespace Client
         static public event EventHandler<RoomCreate>? Roomcreate;
         static public event EventHandler<TryJoinRoom>? Tryjoinroom;
 
-        static private SemaphoreSlim sem = new(1, 1);
-        static private Queue<string> ProcessQueue = new();
+        static private AsyncQueue<string> ProcessQueue = new();
 
         static public void Start()  // 创建一个线程处理信息
         {
@@ -29,16 +29,13 @@ namespace Client
         static public void ProcessMessage(string message)
         {
             ProcessQueue.Enqueue(message);
-            sem.Release();
         }
 
         static private async void Processing()
         {
             while (true)
             {
-                await sem.WaitAsync();
-                while (ProcessQueue.Count > 0)
-                    process(ProcessQueue.Dequeue());
+                process(await ProcessQueue.DequeueAsync());
             }
         }
 

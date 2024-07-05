@@ -12,13 +12,14 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.VisualStudio.Threading;
+
 namespace Client
 {
     internal static class Server
     {
         private static SslStream stream;
-        private static SemaphoreSlim msg_sem = new(1,1);
-        private static Queue<string> messages = new();
+        private static AsyncQueue<string> messages = new();
 
         public static void Connect(string host, int port)
         {
@@ -51,19 +52,15 @@ namespace Client
         public static void Send(string message)
         {
             messages.Enqueue(message);
-            msg_sem.Release();
         }
         private static async void Writer()
         {
             StreamWriter writer = new(stream);
             while (true)
             {
-                await msg_sem.WaitAsync();
-                while (messages.Count > 0)
-                {
-                    var msg = messages.Dequeue();
-                    await writer.WriteLineAsync(msg);
-                }
+                var msg = await messages.DequeueAsync();
+                await writer.WriteLineAsync(msg);
+                writer.Flush();
             }
         }
         private static async void Reader()

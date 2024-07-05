@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace Client
@@ -27,7 +28,12 @@ namespace Client
         {
             UserInfo info;
             info.name = name;
-            Server.Send(JsonSerializer.Serialize(info, options));
+            var json = new JsonObject
+            {
+                ["type"] = 10,
+                ["data"] = JsonSerializer.Serialize(info, options)
+            };
+            Server.Send(json.ToJsonString(options));
             Process.Userinfo += f;
         }
 
@@ -36,7 +42,6 @@ namespace Client
             // check..
             Server.Send("""{"type":20}""");
             Process.Roomcreate += f;
-            Process.Roomcreate += (_, _) => { Process.Roomcreate -= f; };
         }
 
         public static void JoinRoom(int id, EventHandler<TryJoinRoom> f)
@@ -44,7 +49,6 @@ namespace Client
             var msg = new TryJoinRoom { id = id };
             Server.Send(JsonSerializer.Serialize(msg, options));
             Process.Tryjoinroom += f;
-            Process.Tryjoinroom += (_, _) => { Process.Tryjoinroom -= f; };
         }
 
         public static void SendMessage(string message)
