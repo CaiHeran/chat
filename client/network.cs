@@ -10,15 +10,17 @@ using System.Runtime.ConstrainedExecution;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+
+using Microsoft.VisualStudio.Threading;
 
 namespace Client
 {
     internal static class Server
     {
         private static SslStream stream;
-        private static SemaphoreSlim msg_sem = new(1,1);
-        private static Queue<string> messages = new();
+        private static AsyncQueue<string> messages = new();
 
         public static void Connect(string host, int port)
         {
@@ -28,8 +30,7 @@ namespace Client
                 false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate),
                 null
-                );
-            // The server name must match the name on the server certificate.
+            );
             try
             {
                 sslStream.AuthenticateAsClient("");
@@ -41,9 +42,7 @@ namespace Client
                 {
                     Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
                 }
-                Console.WriteLine("Authentication failed - closing the connection.");
                 client.Close();
-                Environment.Exit(0);
                 return;
             }
             stream = sslStream;
@@ -54,18 +53,19 @@ namespace Client
         public static void Send(string message)
         {
             messages.Enqueue(message);
-            msg_sem.Release();
+        }
+        public static void Send(int type, string data)
+        {
+            Send($$"""{"type":{{type}},"data":{{JsonSerializer.Serialize(data)}}}""");
         }
         private static async void Writer()
         {
             StreamWriter writer = new(stream);
             while (true)
             {
-                await msg_sem.WaitAsync();
-                while (messages.Count > 0)
-                {
-                    await writer.WriteLineAsync(messages.Dequeue());
-                }
+                var msg = await messages.DequeueAsync();
+                await writer.WriteLineAsync(msg);
+                writer.Flush();
             }
         }
         private static async void Reader()
@@ -89,15 +89,14 @@ namespace Client
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
-            Console.WriteLine("Server's certificate:\n{0}\n", certificate);
-            Console.Write("Authenticate? y/n ");
-        _Check:
-            switch (Console.ReadKey().Key)
-            {
-            case ConsoleKey.Y: return true;
-            case ConsoleKey.N: return false;
-            default: goto _Check;
-            }
+            string information = $"Server's certificate:\n{certificate}\nAuthenticate?";
+
+            var res = MessageBox.Show($"{information}",//对话框的显示内容
+              "确认", //对话框的标题 
+              MessageBoxButtons.YesNo,
+              MessageBoxIcon.Information);
+
+            return res == DialogResult.Yes;
         }
     }
 }
