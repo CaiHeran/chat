@@ -10,6 +10,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.Threading;
@@ -52,6 +53,10 @@ namespace Client
         public static void Send(string message)
         {
             messages.Enqueue(message);
+        }
+        public static void Send(int type, string data)
+        {
+            Send($$"""{"type":{{type}},"data":{{JsonSerializer.Serialize(data)}}}""");
         }
         private static async void Writer()
         {

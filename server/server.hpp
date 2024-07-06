@@ -110,6 +110,16 @@ public:
         timer_.cancel_one();
         fmt::println("Deliver to {}: {}", info_.id, msg);
     }
+    void deliver(int type, const std::string& msg)
+    {
+        std::string message = json{
+            {"type", type},
+            {"data", msg}
+        }.dump();
+        write_msgs.push_back(msg);
+        timer_.cancel_one();
+        fmt::println("Deliver to {}: {}", info_.id, msg);
+    }
 
     const Info& info() const
     {
@@ -148,6 +158,7 @@ private:
     awaitable<void> do_shake_hands()
     {
         co_await socket_.async_handshake(asio::ssl::stream_base::server, use_awaitable);
+        fmt::println("[{}] connected safely.", info_.id);
 
         global_room.join(shared_from_this());
 
@@ -158,13 +169,11 @@ private:
         co_spawn(socket_.get_executor(),
             [self = shared_from_this()] {return self->writer();},
             detached);
-
-        deliver(fmt::format(R"({{"type":10,"id":{}}})", id()));
     }
 
     awaitable<void> reader()
     try {
-        fmt::println("Start to read from {}", info_.id);
+        fmt::println("Start to read from [{}]", info_.id);
         for (std::string s;;)
         {
             std::size_t n = co_await asio::async_read_until(socket_,
@@ -175,7 +184,8 @@ private:
             s.erase(0, n);
         }
     }
-    catch (std::exception&) {
+    catch (std::exception& e) {
+        fmt::println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
@@ -198,7 +208,8 @@ private:
             }
         }
     }
-    catch (std::exception&) {
+    catch (std::exception& e) {
+        fmt::println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
@@ -252,12 +263,17 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
         | asio::ssl::context::no_tlsv1
         | asio::ssl::context::no_tlsv1_1
         | asio::ssl::context::single_dh_use);
-
-    auto [cert, prikey] = make_cert(CN);
+    {
+    auto [cert, prikey, sha1] = make_cert(CN);
+    fmt::print("Certificate fingerprint: ");
+    for (int i = 0; i < 20; i++)
+        fmt::print("{:x}{:x}", sha1[i] >> 4, sha1[i] & 0b1111);
+    fmt::println("");
     context_.use_certificate(asio::const_buffer(cert.c_str(), cert.size()), asio::ssl::context::pem);
     context_.use_private_key(asio::const_buffer(prikey.c_str(), prikey.size()), asio::ssl::context::pem);
     context_.use_tmp_dh(asio::const_buffer(DHparam.data(), DHparam.size()));
-
+    }
+    fmt::println("Listening...");
     while (true)
     {
         std::make_shared<User>(
@@ -487,21 +503,23 @@ void PlayRoom::Game::deliver()
     }
 }
 
-void process(User_ptr p, json info)
+void process(User_ptr p, json message)
 {
-    switch (info["type"].get<int>()) // info type
+    switch (message["type"].get<int>()) // info type
     {
     // 注册
     case 1: {
+        json info = json::parse(message["data"].get<std::string>());
         p->parse_info(info);
         info.emplace("id", p->info().id);
-        p->deliver(info.dump());
+        p->deliver(1, message.dump());
         break;
     }
     // 修改个人信息
     case 10: {
+        json info = json::parse(message["data"].get<std::string>());
         p->parse_info(info);
-        p->deliver(info.dump());
+        p->deliver(message.dump());
         break;
     }
     // 创建房间
@@ -517,6 +535,7 @@ void process(User_ptr p, json info)
     }
     // 加入房间
     case 21: {
+        json info = json::parse(message["data"].get<std::string>());
         bool ec = ! p->join_room(info["id"].get<int>());
         if (ec) {
             json info {
@@ -530,24 +549,27 @@ void process(User_ptr p, json info)
     // 在房间中发送信息
     case 22: {
         //TODO check info["id"]==p->room().id();
+        json info = json::parse(message["data"].get<std::string>());
         p->room()->deliver(info["message"]);
         break;
     }
 
     case 30: {
         //TODO: check whether p is the host
+        json info = json::parse(message["data"].get<std::string>());
         p->room()->new_game(info);
         p->room()->deliver_gameinfo();
         break;
     }
     case 31: {
+        json info = json::parse(message["data"].get<std::string>());
         int order = p->get_order();
         bool ec = ! p->room()->push_op(order, info["op"]);
-        json info {
+        json infoback {
             {"type", 21},
             {"ec", (int)ec}
         };
-        p->deliver(info.dump());
+        p->deliver(infoback.dump());
         break;
     }
     default:

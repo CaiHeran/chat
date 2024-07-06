@@ -24,16 +24,19 @@ namespace Client
             return (_, x) => self(self, x);
         }
 
+        public static void Login(string name, EventHandler<UserInfo> f)
+        {
+            UserInfo info;
+            info.name = name;
+            Server.Send(1, JsonSerializer.Serialize(info, options));
+            Process.Userinfo += f;
+        }
+
         public static void SetMyInfo(string name, EventHandler<UserInfo> f)
         {
             UserInfo info;
             info.name = name;
-            var json = new JsonObject
-            {
-                ["type"] = 10,
-                ["data"] = JsonSerializer.Serialize(info, options)
-            };
-            Server.Send(json.ToJsonString(options));
+            Server.Send(10, JsonSerializer.Serialize(info, options));
             Process.Userinfo += f;
         }
 
@@ -47,7 +50,7 @@ namespace Client
         public static void JoinRoom(int id, EventHandler<TryJoinRoom> f)
         {
             var msg = new TryJoinRoom { id = id };
-            Server.Send(JsonSerializer.Serialize(msg, options));
+            Server.Send(21, JsonSerializer.Serialize(msg, options));
             Process.Tryjoinroom += f;
         }
 
@@ -55,10 +58,10 @@ namespace Client
         {
             // check
             var msg = new RoomMessage {
-                id = DB.Room.Id,
+                id = DB.Room!.Id,
                 message = message
             };
-            Server.Send(JsonSerializer.Serialize(msg, options));
+            Server.Send(22, JsonSerializer.Serialize(msg, options));
         }
     }
 }

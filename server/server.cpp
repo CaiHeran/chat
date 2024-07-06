@@ -39,8 +39,6 @@ try
 	asio::io_context io_context(1);
 
 	co_spawn(io_context, listen(tcp::acceptor(io_context, {tcp::v6(), port})), detached);
-	
-	fmt::println("Listening...");
 
 	asio::signal_set signals(io_context, SIGINT, SIGTERM);
 	signals.async_wait([&](auto, auto){ io_context.stop(); });

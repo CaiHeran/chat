@@ -8,10 +8,11 @@
         public int type;
     }
 
-    // 01 用户成功连接服务器后，服务器分配 user_id
+    // 01 用户成功连接服务器并注册后，服务器分配 user_id
     public struct Login : Info
     {
         public const int type = 1;
+        public string name;
         public int id;
     }
 

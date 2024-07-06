@@ -43,7 +43,7 @@ namespace Client
              */
 
             this.Hide();
-            FormHome.formhome.Show();
+            FormLogin.formhome.Show();
         }
         //
         // button_exit_Click

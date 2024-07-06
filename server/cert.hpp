@@ -37,11 +37,15 @@ auto make_cert(std::string CN)
 	std::string cert;
 	bio = BIO_new(BIO_s_mem());
 	PEM_write_bio_X509(bio, x509);
-	X509_free(x509);
 	len = BIO_ctrl_pending(bio);
 	cert.resize(len);
 	BIO_read(bio, cert.data(), len);
+	// 导出证书的指纹
+	std::array<std::uint8_t, 20> sha1;
+	X509_digest(x509, EVP_sha1(), (unsigned char*)sha1.data(), nullptr);
+	
+	X509_free(x509);
 	BIO_free(bio);
 
-	return std::make_tuple(cert, prikey);
+	return std::make_tuple(cert, prikey, sha1);
 }
