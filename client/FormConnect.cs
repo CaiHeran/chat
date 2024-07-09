@@ -37,13 +37,8 @@ namespace Client
                 return;
             }
 
-            /*
-             * this.Hide();
-             * FormTest.formtest.Show();
-             */
-
-            this.Hide();
-            FormLogin.formhome.Show();
+            new FormLogin();
+            this.Close();
         }
         //
         // button_exit_Click

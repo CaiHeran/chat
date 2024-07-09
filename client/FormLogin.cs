@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using Info;
+
 namespace Client
 {
     public partial class FormLogin : Form
@@ -21,25 +23,26 @@ namespace Client
             formlogin = this;
         }
 
+        EventHandler<Login>? f;
+
         // buttons
         // button_login
         //
         private void button_login_Click(object sender, EventArgs e)
         {
-            Functions.Login(textBox_name.Text, (_, info) =>
-            {
-                //TODO
-            });
+            f = (_, info) => {
+                Login_callback();
+                new FormHome();
+                this.Close();
+            };
+            Functions.Login(textBox_name.Text, f);
+        }
 
-        }
-        //
-        // button_back
-        //
-        private void button_back_Click(object sender, EventArgs e)
+        public void Login_callback()
         {
-            this.Hide();
-            FormConnect.formconnect.Show();
+            Process.Login -= f;
         }
+        
         //
         // button_exit
         //

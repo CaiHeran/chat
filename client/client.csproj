@@ -27,4 +27,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Properties\五子棋\" />
+  </ItemGroup>
+
 </Project>

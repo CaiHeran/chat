@@ -49,7 +49,7 @@ namespace Client
 
     internal static class Database
     {
-        public static User Me { get; set; } = new();
+        public static User Me { get; set; }
         public static Room? Room { get; set; }
     }
 }

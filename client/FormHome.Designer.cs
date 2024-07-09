@@ -28,51 +28,54 @@
         /// </summary>
         private void InitializeComponent()
         {
-            button1 = new Button();
-            button2 = new Button();
-            button3 = new Button();
+            button_CreateRoom = new Button();
+            button_JoinRoom = new Button();
+            button_Exist = new Button();
             label_ID = new Label();
             label_name = new Label();
             SuspendLayout();
             // 
-            // button1
+            // button_CreateRoom
             // 
-            button1.Font = new Font("楷体", 14.25F);
-            button1.Location = new Point(153, 62);
-            button1.Name = "button1";
-            button1.Size = new Size(148, 45);
-            button1.TabIndex = 0;
-            button1.Text = "创建房间";
-            button1.UseVisualStyleBackColor = true;
+            button_CreateRoom.Font = new Font("楷体", 14.25F);
+            button_CreateRoom.Location = new Point(153, 62);
+            button_CreateRoom.Name = "button_CreateRoom";
+            button_CreateRoom.Size = new Size(148, 45);
+            button_CreateRoom.TabIndex = 0;
+            button_CreateRoom.Text = "创建房间";
+            button_CreateRoom.UseVisualStyleBackColor = true;
+            button_CreateRoom.Click += button_CreateRoom_Click;
             // 
-            // button2
+            // button_JoinRoom
             // 
-            button2.Font = new Font("楷体", 14.25F);
-            button2.Location = new Point(153, 136);
-            button2.Name = "button2";
-            button2.Size = new Size(148, 44);
-            button2.TabIndex = 1;
-            button2.Text = "加入房间";
-            button2.UseVisualStyleBackColor = true;
+            button_JoinRoom.Font = new Font("楷体", 14.25F);
+            button_JoinRoom.Location = new Point(153, 136);
+            button_JoinRoom.Name = "button_JoinRoom";
+            button_JoinRoom.Size = new Size(148, 44);
+            button_JoinRoom.TabIndex = 1;
+            button_JoinRoom.Text = "加入房间";
+            button_JoinRoom.UseVisualStyleBackColor = true;
+            button_JoinRoom.Click += button_JoinRoom_Click;
             // 
-            // button3
+            // button_Exist
             // 
-            button3.Font = new Font("楷体", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            button3.Location = new Point(180, 222);
-            button3.Name = "button3";
-            button3.Size = new Size(94, 41);
-            button3.TabIndex = 2;
-            button3.Text = "退出";
-            button3.UseVisualStyleBackColor = true;
+            button_Exist.Font = new Font("楷体", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            button_Exist.Location = new Point(180, 222);
+            button_Exist.Name = "button_Exist";
+            button_Exist.Size = new Size(94, 41);
+            button_Exist.TabIndex = 2;
+            button_Exist.Text = "退出";
+            button_Exist.UseVisualStyleBackColor = true;
+            button_Exist.Click += button_Exist_Click;
             // 
             // label_ID
             // 
             label_ID.AutoSize = true;
             label_ID.Location = new Point(43, 9);
             label_ID.Name = "label_ID";
-            label_ID.Size = new Size(43, 17);
+            label_ID.Size = new Size(21, 17);
             label_ID.TabIndex = 3;
-            label_ID.Text = "label1";
+            label_ID.Text = "ID";
             // 
             // label_name
             // 
@@ -81,19 +84,19 @@
             label_name.Name = "label_name";
             label_name.Size = new Size(43, 17);
             label_name.TabIndex = 4;
-            label_name.Text = "label1";
+            label_name.Text = "Name";
             // 
-            // Form3
+            // FormHome
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
             Controls.Add(label_name);
             Controls.Add(label_ID);
-            Controls.Add(button3);
-            Controls.Add(button2);
-            Controls.Add(button1);
-            Name = "Form3";
+            Controls.Add(button_Exist);
+            Controls.Add(button_JoinRoom);
+            Controls.Add(button_CreateRoom);
+            Name = "FormHome";
             Text = "Form3";
             ResumeLayout(false);
             PerformLayout();
@@ -101,9 +104,9 @@
 
         #endregion
 
-        private Button button1;
-        private Button button2;
-        private Button button3;
+        private Button button_CreateRoom;
+        private Button button_JoinRoom;
+        private Button button_Exist;
         private Label label_ID;
         private Label label_name;
     }

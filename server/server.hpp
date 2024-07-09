@@ -17,10 +17,10 @@ using asio::use_awaitable;
 class GlobalRoom;
 class User;
 struct Player;
-class PlayRoom;
+class Room;
 
 using User_ptr = std::shared_ptr<User>;
-using PlayRoom_ptr = std::shared_ptr<PlayRoom>;
+using PlayRoom_ptr = std::shared_ptr<Room>;
 
 void process(User_ptr p, json info);
 
@@ -44,7 +44,7 @@ public:
     PlayRoom_ptr create_room(User_ptr host)
     {
         int room_id = _new_id();
-        auto room = std::make_shared<PlayRoom>(room_id, host);
+        auto room = std::make_shared<Room>(room_id, host);
         playrooms.emplace(room_id, room);
         return room;
     }
@@ -228,7 +228,7 @@ private:
     }
 
 private:
-    friend class PlayRoom;  // 设置order
+    friend class Room;  // 设置order
     int num=-1;     // -1代表未进入房间
     int order=-1;   // -1代表未参加游戏
     PlayRoom_ptr room_ptr;
@@ -291,7 +291,7 @@ struct Player
     Cards cards;
 };
 
-class PlayRoom
+class Room
 {
 private:
     struct Game;
@@ -306,7 +306,7 @@ private:
         std::vector<Player> players;
         std::vector<Operation> ops;
 
-        Game(PlayRoom *upper, const Cards& cards, const std::vector<int>& nums)
+        Game(Room *upper, const Cards& cards, const std::vector<int>& nums)
             : origin(cards)
         {
             int n = nums.size();
@@ -340,7 +340,7 @@ private:
     };
 
 public:
-    PlayRoom(int room_id, User_ptr host)
+    Room(int room_id, User_ptr host)
       : room_id(room_id),
         part_cnt(1),
         parts{{host_num, host}}
@@ -353,6 +353,14 @@ public:
     {
         for (const auto& [_, p] : parts)
             p->deliver(msg);
+    }
+    void deliver(int type, const std::string& msg)
+    {
+        std::string message = json{
+            {"type", type},
+            {"data", msg}
+        }.dump();
+        deliver(message);
     }
     void deliver(const std::string& msg, const int except_id)
     {
@@ -453,7 +461,7 @@ bool User::join_room(int room_id)
     return true;
 }
 
-void PlayRoom::Game::_deal_cards()
+void Room::Game::_deal_cards()
 {
     int n = players.size();
     std::default_random_engine e(std::random_device{}());
@@ -479,7 +487,7 @@ void PlayRoom::Game::_deal_cards()
     }
 }
 
-json PlayRoom::Game::get_gameinfo()
+json Room::Game::get_gameinfo()
 {
     json::array_t nums;
     for (const auto& p: players)
@@ -492,7 +500,7 @@ json PlayRoom::Game::get_gameinfo()
     return info;
 }
 
-void PlayRoom::Game::deliver()
+void Room::Game::deliver()
 {
     json info = get_gameinfo();
     info.emplace("self", json::array_t{});
@@ -548,9 +556,10 @@ void process(User_ptr p, json message)
     }
     // 在房间中发送信息
     case 22: {
+        std::string data = message["data"].get<std::string>();
+        json info = json::parse(data);
         //TODO check info["id"]==p->room().id();
-        json info = json::parse(message["data"].get<std::string>());
-        p->room()->deliver(info["message"]);
+        p->room()->deliver(22, data);
         break;
     }
 

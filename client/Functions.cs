@@ -18,18 +18,10 @@ namespace Client
             IncludeFields = true
         };
 
-        delegate void SelfApplicable<T>(SelfApplicable<T> self, T arg1);
-        static EventHandler<T> Make<T>(SelfApplicable<T> self)
+        public static void Login(string name, EventHandler<Login> f)
         {
-            return (_, x) => self(self, x);
-        }
-
-        public static void Login(string name, EventHandler<UserInfo> f)
-        {
-            UserInfo info;
-            info.name = name;
-            Server.Send(1, JsonSerializer.Serialize(info, options));
-            Process.Userinfo += f;
+            Server.Send(1, $$"""{"name":"{{name}}"}""");
+            Process.Login += f;
         }
 
         public static void SetMyInfo(string name, EventHandler<UserInfo> f)

@@ -91,8 +91,8 @@ namespace Client
 
             string information = $"Server's certificate:\n{certificate}\nAuthenticate?";
 
-            var res = MessageBox.Show($"{information}",//对话框的显示内容
-              "确认", //对话框的标题 
+            var res = MessageBox.Show($"{information}",
+              "确认",
               MessageBoxButtons.YesNo,
               MessageBoxIcon.Information);
 

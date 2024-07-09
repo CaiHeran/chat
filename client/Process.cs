@@ -15,6 +15,7 @@ namespace Client
 
     internal static class Process
     {
+        static public event EventHandler<Login>? Login;
         static public event EventHandler<UserInfo>? Userinfo;
         static public event EventHandler<RoomCreate>? Roomcreate;
         static public event EventHandler<TryJoinRoom>? Tryjoinroom;
@@ -44,7 +45,6 @@ namespace Client
         {
             var jsonnode = JsonNode.Parse(msgstr);
             int msgtype = (int)jsonnode!["type"]!;
-            var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
             var options = new JsonSerializerOptions
             {
                 IncludeFields = true
@@ -53,12 +53,15 @@ namespace Client
             {
             case 1:  // 注册
             {
+                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
                 var msg = JsonSerializer.Deserialize<Login>(data);
-                // msg.id
+                DB.Me = new User(msg.id, msg.name);
+                Login?.Invoke(null, msg);
                 break;
             }
             case 10: // 设置个人信息
             {
+                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
                 var msg = JsonSerializer.Deserialize<UserInfo>(data);
                 DB.Me.SetName(msg.name);
                 Userinfo?.Invoke(null, msg);
@@ -66,6 +69,7 @@ namespace Client
             }
             case 20: // 用户创建房间，服务器分配 room_id
             {
+                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
                 var msg = JsonSerializer.Deserialize<RoomCreate>(data);
                 if (msg.ec != 0)
                 {
@@ -79,6 +83,7 @@ namespace Client
             }
             case 21: // 用户尝试进入房间
             {
+                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
                 var msg = JsonSerializer.Deserialize<JoinRoom>(data);
                 if (msg.ec != 0)
                 {
@@ -93,6 +98,7 @@ namespace Client
             }
             case 22: // 在房间中发送消息
             {
+                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
                 var msg = JsonSerializer.Deserialize<RoomMessage>(data);
                 // TODO 通知发送成功
                 break;
