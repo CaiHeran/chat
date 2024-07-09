@@ -1,6 +1,10 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#pragma comment(lib,"libssl.lib")
+#pragma comment(lib,"libcrypto.lib")
+
+
 #include <iostream>
 #include <fstream>
 #include <format>
