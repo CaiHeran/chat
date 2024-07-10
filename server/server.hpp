@@ -6,7 +6,8 @@
 #include "basics.hpp"
 #include "cert.hpp"
 
-using fmt::print, fmt::println;
+using std::print, std::println;
+using std::format;
 
 using asio::ip::tcp;
 using asio::awaitable;
@@ -87,7 +88,7 @@ public:
         timer_(socket_.get_executor())
     {
         info_.id = _new_id();
-        fmt::println("{} connected, id: {}",
+        println("{} connected, id: {}",
             socket_.lowest_layer().remote_endpoint().address().to_string(), info_.id);
         timer_.expires_at(std::chrono::steady_clock::time_point::max());
     }
@@ -109,7 +110,7 @@ public:
     {
         write_msgs.emplace_back(std::forward<T>(msg));
         timer_.cancel_one();
-        fmt::println("Deliver to {}: {}", info_.id, msg);
+        println("Deliver to {}: {}", info_.id, msg);
     }
     void deliver(int type, const std::string& msg)
     {
@@ -153,7 +154,7 @@ private:
     awaitable<void> do_shake_hands()
     {
         co_await socket_.async_handshake(asio::ssl::stream_base::server, use_awaitable);
-        fmt::println("[{}] connected safely.", info_.id);
+        println("[{}] connected safely.", info_.id);
 
         global_room.join(shared_from_this());
 
@@ -168,19 +169,19 @@ private:
 
     awaitable<void> reader()
     try {
-        fmt::println("Start to read from [{}]", info_.id);
+        println("Start to read from [{}]", info_.id);
         for (std::string s;;)
         {
             std::size_t n = co_await asio::async_read_until(socket_,
                 asio::dynamic_buffer(s, 256), '\n', use_awaitable);
             std::string_view sv(s.data(), s.data()+n);
-            fmt::println("Receive from {}: {}", info_.id, sv);
+            println("Receive from [{}]: {}", info_.id, sv);
             process(shared_from_this(), json::parse(sv));
             s.erase(0, n);
         }
     }
     catch (std::exception& e) {
-        fmt::println("[{}] Exception: {}", info_.id, e.what());
+        println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
@@ -195,7 +196,7 @@ private:
             }
             else
             {
-                fmt::println("Sending to [{}]:{}", id(), write_msgs.front());
+                println("Sending to [{}]: {}", id(), write_msgs.front());
                 co_await asio::async_write(socket_,
                     asio::buffer(write_msgs.front()), use_awaitable);
                 write_msgs.pop_front();
@@ -204,7 +205,7 @@ private:
         }
     }
     catch (std::exception& e) {
-        fmt::println("[{}] Exception: {}", info_.id, e.what());
+        println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
@@ -259,15 +260,15 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
         | asio::ssl::context::single_dh_use);
     {
     auto [cert, prikey, sha1] = make_cert(CN);
-    fmt::print("Certificate fingerprint: ");
+    print("Certificate fingerprint: ");
     for (int i = 0; i < 20; i++)
-        fmt::print("{:x}{:x}", sha1[i] >> 4, sha1[i] & 0b1111);
-    fmt::println("");
+        print("{:x}{:x}", sha1[i] >> 4, sha1[i] & 0b1111);
+    println("");
     context_.use_certificate(asio::const_buffer(cert.c_str(), cert.size()), asio::ssl::context::pem);
     context_.use_private_key(asio::const_buffer(prikey.c_str(), prikey.size()), asio::ssl::context::pem);
     context_.use_tmp_dh(asio::const_buffer(DHparam.data(), DHparam.size()));
     }
-    fmt::println("Listening...");
+    println("Listening...");
     while (true)
     {
         std::make_shared<User>(
@@ -397,7 +398,7 @@ void process(User_ptr p, json message)
         p->create_room();
         json info {
             {"type", 10},
-            {"data", fmt::format(R"({{"id":"{}"}})", p->room()->id())}
+            {"data", format(R"({{"id":"{}"}})", p->room()->id())}
         };
         p->deliver(info.dump());
         break;
@@ -407,9 +408,8 @@ void process(User_ptr p, json message)
         json info = json::parse(message["data"].get<std::string>());
         bool ec = ! p->join_room(info["id"].get<int>());
         if (ec) {
-            p->deliver(21, fmt::format(R"({{"ec":{}}})", (int)ec));
+            p->deliver(21, format(R"({{"ec":{}}})", (int)ec));
         }
-        //TODO
         break;
     }
     // 在房间中发送信息

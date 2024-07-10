@@ -10,13 +10,13 @@ void print_ipv6_address()
     tcp::resolver::query query(asio::ip::host_name(),"");
     tcp::resolver::iterator it=resolver.resolve(query);
 
-	fmt::println("Server IPv6 addresses: ");
+	println("Server IPv6 addresses: ");
     while (it!=tcp::resolver::iterator())
     {
         asio::ip::address addr = (it++)->endpoint().address();
         if (!addr.is_v6()) continue;
 		auto addr6 = addr.to_v6();
-		fmt::println("{}", addr6.to_string());
+		println("{}", addr6.to_string());
     }
 }
 
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 		port = std::atoi(argv[1]);
 	}
 
-	fmt::println("This server is running on port {}.", port);
+	println("This server is running on port {}.", port);
 try
 {
 	print_ipv6_address();
@@ -47,7 +47,7 @@ try
 }
 catch (std::exception& e)
 {
-	std::cerr << "Exception: " << e.what() << "\n";
+	println("Exception: {}", e.what());
 }
 
 	return 0;
