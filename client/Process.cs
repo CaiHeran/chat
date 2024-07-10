@@ -12,6 +12,11 @@ using Info;
 namespace Client
 {
     using DB = Database;
+    /****
+     * 疑惑：DB是类，为何可以直接使用呢
+     * 难道不应该是：Database db;   db.Me.SetName(...);
+     * 但看起来可能又没有问题，因为代码中有不少类似的无法理解的内容
+     * ****/
 
     internal static class Process
     {
@@ -22,30 +27,36 @@ namespace Client
 
         static private AsyncQueue<string> ProcessQueue = new();
 
-        static public void Start()  // 创建一个线程处理信息
+        static public void Start()  // 创建一个线程处理消息
         {
             Thread t = new(new ThreadStart(Processing));
             t.Start();
         }
 
+        // 将消息放入队列
         static public void ProcessMessage(string message)
         {
             ProcessQueue.Enqueue(message);
         }
 
+        //等待并处理消息
         static private async void Processing()
         {
             while (true)
             {
                 process(await ProcessQueue.DequeueAsync());
+                /* Todo:在处理一个消息后UI更新数据，
+                 * 更新代码与消息类型紧密相关，建议通过Handle设计代码
+                 * 或者说这算是一个疑惑，怎么在处理消息附加代码
+                */
             }
         }
 
         static private void process(string msgstr)
         {
-            var jsonnode = JsonNode.Parse(msgstr);
-            int msgtype = (int)jsonnode!["type"]!;
-            var options = new JsonSerializerOptions
+            var jsonnode = JsonNode.Parse(msgstr);//字符串消息转化为可处理数据
+            int msgtype = (int)jsonnode!["type"]!;//取出消息类型
+            var options = new JsonSerializerOptions//？？？没看懂
             {
                 IncludeFields = true
             };
@@ -54,17 +65,21 @@ namespace Client
             case 1:  // 注册
             {
                 var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<Login>(data);
-                DB.Me = new User(msg.id, msg.name);
-                Login?.Invoke(null, msg);
+                var msg = JsonSerializer.Deserialize<Login>(data);//取出消息数据
+                DB.Me = new User(msg.id, msg.name);//将用户数据（id和name）放入数据库
+                Login?.Invoke(null, msg);//？？？没看懂
                 break;
             }
+
+            /*******疑惑：在用户注册时，并没有设置name，此处的name有值吗？*******/
+            
             case 10: // 设置个人信息
             {
                 var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<UserInfo>(data);
-                DB.Me.SetName(msg.name);
-                Userinfo?.Invoke(null, msg);
+                var msg = JsonSerializer.Deserialize<UserInfo>(data);//取出消息数据
+                DB.Me.SetName(msg.name);//将用户数据放入数据库
+                Userinfo?.Invoke(null, msg);//？？？没看懂
+
                 break;
             }
             case 20: // 用户创建房间，服务器分配 room_id
@@ -73,11 +88,11 @@ namespace Client
                 var msg = JsonSerializer.Deserialize<RoomCreate>(data);
                 if (msg.ec != 0)
                 {
-                    //
+                    //Todo，处理异常
                 }
                 else
                 {
-                    DB.Room = new(msg.id);
+                    DB.Room = new(msg.id);//无异常，创建房间
                 }
                 break;
             }
@@ -87,20 +102,20 @@ namespace Client
                 var msg = JsonSerializer.Deserialize<JoinRoom>(data);
                 if (msg.ec != 0)
                 {
-                    //
+                    //Todo，处理异常
                 }
                 else
                 {
-                    DB.Room = new(msg.id, msg.num, msg.parts);
-                    //
+                    DB.Room = new(msg.id, msg.num, msg.parts);//无异常，加入房间
+                    //Todo
                 }
                 break;
             }
             case 22: // 在房间中发送消息
             {
                 var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<RoomMessage>(data);
-                // TODO 通知发送成功
+                var msg = JsonSerializer.Deserialize<RoomMessage>(data);// 取出消息数据
+                //Todo 与服务器交流，将用户发送内容提交到服务器
                 break;
             }
             }

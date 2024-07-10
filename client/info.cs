@@ -13,7 +13,7 @@
     {
         public const int type = 1;
         public string name;
-        public int id;
+        public int id;//个人id
     }
 
     // 10 用户设置个人信息
@@ -28,14 +28,14 @@
     {
         public const int type = 20;
         public int ec;
-        public int id;
+        public int id;//房间id
     }
 
     // 21 用户尝试进入房间
     struct TryJoinRoom : Info
     {
         public const int type = 21;
-        public int id;
+        public int id;//房间id
     }
 
     // 21 进入房间成功/失败
