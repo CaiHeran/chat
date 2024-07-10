@@ -10,7 +10,6 @@ using System.Windows.Forms;
 
 namespace Client
 {
-
     public partial class FormRoom : Form
     {
         public FormRoom()

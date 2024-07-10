@@ -115,9 +115,8 @@
             Controls.Add(label_members);
             Controls.Add(listView_members);
             Name = "FormRoom";
-            Text = "游戏标题";
+            Text = "FormRoom";
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
