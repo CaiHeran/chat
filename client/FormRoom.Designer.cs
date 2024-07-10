@@ -34,6 +34,7 @@
             button_send = new Button();
             richTextBox_view = new RichTextBox();
             label_content = new Label();
+            button_exit = new Button();
             SuspendLayout();
             // 
             // listView_members
@@ -58,9 +59,9 @@
             // 
             textBox_input.Location = new Point(289, 363);
             textBox_input.Name = "textBox_input";
+            textBox_input.PlaceholderText = "在这里键入消息";
             textBox_input.Size = new Size(418, 23);
             textBox_input.TabIndex = 2;
-            textBox_input.Text = "在这里键入消息";
             // 
             // button_send
             // 
@@ -90,12 +91,23 @@
             label_content.TabIndex = 5;
             label_content.Text = "消息";
             // 
+            // button_exit
+            // 
+            button_exit.Location = new Point(713, 12);
+            button_exit.Name = "button_exit";
+            button_exit.Size = new Size(75, 23);
+            button_exit.TabIndex = 6;
+            button_exit.Text = "退出";
+            button_exit.UseVisualStyleBackColor = true;
+            button_exit.Click += button_exit_Click;
+            // 
             // FormRoom
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             ControlBox = false;
+            Controls.Add(button_exit);
             Controls.Add(label_content);
             Controls.Add(richTextBox_view);
             Controls.Add(button_send);
@@ -116,5 +128,6 @@
         private Button button_send;
         private RichTextBox richTextBox_view;
         private Label label_content;
+        private Button button_exit;
     }
 }

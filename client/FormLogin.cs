@@ -31,16 +31,18 @@ namespace Client
         private void button_login_Click(object sender, EventArgs e)
         {
             f = (_, info) => {
-                Login_callback();
-                new FormHome();
-                this.Close();
+                //Requiring fixing
             };
             Functions.Login(textBox_name.Text, f);
+            this.Hide();
+            Login_callback();
+            FormHome.formhome = new FormHome();
+            FormHome.formhome.ShowDialog();
         }
 
         public void Login_callback()
         {
-            Process.Login -= f;
+            Process.Login -= f;//???
         }
         
         //

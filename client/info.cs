@@ -57,7 +57,7 @@
     // 22 在房间中发送消息
     struct RoomMessage : Info
     {
-        public const int type = 21;
+        public const int type = 22;//fixed
         public int id;  // room id
         public string message;
     }

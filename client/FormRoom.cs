@@ -31,6 +31,16 @@ namespace Client
             string msg = textBox_input.Text;
             Functions.SendMessage(msg);
         }
+
+        private void button_exit_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.No) return;
+            this.Close();
+            Application.Exit();
+            Application.ExitThread();
+            Environment.Exit(0);
+        }
         //
         // richTextBoxs
         // richTextBox_view

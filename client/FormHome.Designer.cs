@@ -30,9 +30,10 @@
         {
             button_CreateRoom = new Button();
             button_JoinRoom = new Button();
-            button_Exist = new Button();
+            button_exit = new Button();
             label_ID = new Label();
             label_name = new Label();
+            textBox_id = new TextBox();
             SuspendLayout();
             // 
             // button_CreateRoom
@@ -57,16 +58,16 @@
             button_JoinRoom.UseVisualStyleBackColor = true;
             button_JoinRoom.Click += button_JoinRoom_Click;
             // 
-            // button_Exist
+            // button_exit
             // 
-            button_Exist.Font = new Font("楷体", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            button_Exist.Location = new Point(180, 222);
-            button_Exist.Name = "button_Exist";
-            button_Exist.Size = new Size(94, 41);
-            button_Exist.TabIndex = 2;
-            button_Exist.Text = "退出";
-            button_Exist.UseVisualStyleBackColor = true;
-            button_Exist.Click += button_Exist_Click;
+            button_exit.Font = new Font("楷体", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            button_exit.Location = new Point(180, 222);
+            button_exit.Name = "button_exit";
+            button_exit.Size = new Size(94, 41);
+            button_exit.TabIndex = 2;
+            button_exit.Text = "退出";
+            button_exit.UseVisualStyleBackColor = true;
+            button_exit.Click += button_exit_Click;
             // 
             // label_ID
             // 
@@ -86,18 +87,29 @@
             label_name.TabIndex = 4;
             label_name.Text = "Name";
             // 
+            // textBox_id
+            // 
+            textBox_id.Location = new Point(325, 149);
+            textBox_id.Margin = new Padding(0, 3, 0, 3);
+            textBox_id.Name = "textBox_id";
+            textBox_id.PlaceholderText = "请输入房间号";
+            textBox_id.Size = new Size(111, 23);
+            textBox_id.TabIndex = 5;
+            // 
             // FormHome
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
+            ControlBox = false;
+            Controls.Add(textBox_id);
             Controls.Add(label_name);
             Controls.Add(label_ID);
-            Controls.Add(button_Exist);
+            Controls.Add(button_exit);
             Controls.Add(button_JoinRoom);
             Controls.Add(button_CreateRoom);
             Name = "FormHome";
-            Text = "Form3";
+            Text = "游戏标题";
             ResumeLayout(false);
             PerformLayout();
         }
@@ -106,8 +118,9 @@
 
         private Button button_CreateRoom;
         private Button button_JoinRoom;
-        private Button button_Exist;
+        private Button button_exit;
         private Label label_ID;
         private Label label_name;
+        private TextBox textBox_id;
     }
 }

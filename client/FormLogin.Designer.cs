@@ -80,6 +80,7 @@
             AutoScaleDimensions = new SizeF(10F, 21F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
+            ControlBox = false;
             Controls.Add(button_exit);
             Controls.Add(textBox_name);
             Controls.Add(label_yourname);

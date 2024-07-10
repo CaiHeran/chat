@@ -37,8 +37,9 @@ namespace Client
                 return;
             }
 
-            new FormLogin();
-            this.Close();
+            this.Hide();
+            FormLogin.formlogin = new FormLogin();
+            FormLogin.formlogin.ShowDialog();
         }
         //
         // button_exit_Click
