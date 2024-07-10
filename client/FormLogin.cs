@@ -13,6 +13,8 @@ using Info;
 
 namespace Client
 {
+    using DB = Database;
+
     public partial class FormLogin : Form
     {
         public static FormLogin? formlogin;
@@ -32,12 +34,13 @@ namespace Client
         {
             f = (_, info) => {
                 //Requiring fixing
+                Login_callback();
+                formlogin!.Hide();
+                new FormHome();
+                FormHome.formhome!.ShowDialog();
             };
-            Functions.Login(textBox_name.Text, f);
-            this.Hide();
-            Login_callback();
-            FormHome.formhome = new FormHome();
-            FormHome.formhome.ShowDialog();
+            Process.Login += f;
+            Functions.Login(textBox_name.Text);
         }
 
         public void Login_callback()

@@ -37,6 +37,7 @@ namespace Client
                 return;
             }
 
+            Process.Start();
             this.Hide();
             FormLogin.formlogin = new FormLogin();
             FormLogin.formlogin.ShowDialog();

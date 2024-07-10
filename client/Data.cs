@@ -55,7 +55,7 @@ namespace Client
     //数据库，包含用户信息和房间信息
     internal static class Database
     {
-        public static User Me { get; set; }
+        public static User? Me { get; set; }
         public static Room? Room { get; set; }
     }
 }

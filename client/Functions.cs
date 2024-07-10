@@ -18,32 +18,28 @@ namespace Client
             IncludeFields = true
         };
 
-        public static void Login(string name, EventHandler<Login> f)
+        public static void Login(string name)
         {
             Server.Send(1, $$"""{"name":"{{name}}"}""");
-            Process.Login += f;
         }
 
-        public static void SetMyInfo(string name, EventHandler<UserInfo> f)
+        public static void SetMyInfo(string name)
         {
             UserInfo info;
             info.name = name;
             Server.Send(10, JsonSerializer.Serialize(info, options));
-            Process.Userinfo += f;
         }
 
-        public static void CreateRoom(EventHandler<RoomCreate> f)
+        public static void CreateRoom()
         {
             // check..
             Server.Send("""{"type":20}""");
-            Process.Roomcreate += f;
         }
 
-        public static void JoinRoom(int id, EventHandler<TryJoinRoom> f)
+        public static void JoinRoom(int id)
         {
             var msg = new TryJoinRoom { id = id };
             Server.Send(21, JsonSerializer.Serialize(msg, options));
-            Process.Tryjoinroom += f;
         }
 
         public static void SendMessage(string message)

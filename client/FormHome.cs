@@ -22,9 +22,8 @@ namespace Client
             InitializeComponent();
             formhome = this;
 
-            //Requiring fixing
-            //label_ID.Text = $" ID: {DB.Me.Id}";
-            //label_name.Text = $"Name: {DB.Me.Name}";
+            label_ID.Text = $" ID: {DB.Me.Id}";
+            label_name.Text = $"Name: {DB.Me.Name}";
         }
 
         EventHandler<RoomCreate>? fc;
@@ -34,7 +33,7 @@ namespace Client
             fc = (_, info) =>
             {
             };
-            Functions.CreateRoom(fc);
+            Functions.CreateRoom();
             this.Hide();
             FormRoom formroom = new FormRoom(); 
             formroom.ShowDialog();
@@ -46,7 +45,7 @@ namespace Client
             fj = (_, info) =>
             {
             };
-            Functions.JoinRoom(DB.Me.Id, fj);
+            Functions.JoinRoom(DB.Me.Id);
         }
 
         private void button_exit_Click(object sender, EventArgs e)

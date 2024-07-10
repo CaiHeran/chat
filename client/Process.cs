@@ -8,15 +8,11 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
 using Info;
+using System.Windows.Interop;
 
 namespace Client
 {
     using DB = Database;
-    /****
-     * 疑惑：DB是类，为何可以直接使用呢
-     * 难道不应该是：Database db;   db.Me.SetName(...);
-     * 但看起来可能又没有问题，因为代码中有不少类似的无法理解的内容
-     * ****/
 
     internal static class Process
     {
@@ -56,7 +52,7 @@ namespace Client
         {
             var jsonnode = JsonNode.Parse(msgstr);//字符串消息转化为可处理数据
             int msgtype = (int)jsonnode!["type"]!;//取出消息类型
-            var options = new JsonSerializerOptions//？？？没看懂
+            var options = new JsonSerializerOptions
             {
                 IncludeFields = true
             };
@@ -64,28 +60,26 @@ namespace Client
             {
             case 1:  // 注册
             {
-                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<Login>(data);//取出消息数据
+                var data = (string)jsonnode!["data"]!;
+                Login msg = JsonSerializer.Deserialize<Login>(data, options);//取出消息数据
                 DB.Me = new User(msg.id, msg.name);//将用户数据（id和name）放入数据库
-                Login?.Invoke(null, msg);//？？？没看懂
+                Login?.Invoke(null, msg);
                 break;
             }
-
-            /*******疑惑：在用户注册时，并没有设置name，此处的name有值吗？*******/
             
             case 10: // 设置个人信息
             {
-                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<UserInfo>(data);//取出消息数据
+                var data = (string)jsonnode!["data"]!;
+                var msg = JsonSerializer.Deserialize<UserInfo>(data, options);//取出消息数据
                 DB.Me.SetName(msg.name);//将用户数据放入数据库
-                Userinfo?.Invoke(null, msg);//？？？没看懂
+                Userinfo?.Invoke(null, msg);
 
                 break;
             }
             case 20: // 用户创建房间，服务器分配 room_id
             {
-                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<RoomCreate>(data);
+                var data = (string)jsonnode!["data"]!;
+                var msg = JsonSerializer.Deserialize<RoomCreate>(data, options);
                 if (msg.ec != 0)
                 {
                     //Todo，处理异常
@@ -97,9 +91,9 @@ namespace Client
                 break;
             }
             case 21: // 用户尝试进入房间
-            {
-                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<JoinRoom>(data);
+                    {
+                        var data = (string)jsonnode!["data"]!;
+                        var msg = JsonSerializer.Deserialize<JoinRoom>(data, options);
                 if (msg.ec != 0)
                 {
                     //Todo，处理异常
@@ -113,8 +107,8 @@ namespace Client
             }
             case 22: // 在房间中发送消息
             {
-                var data = (string)JsonNode.Parse((string)jsonnode!["data"]!)!;
-                var msg = JsonSerializer.Deserialize<RoomMessage>(data);// 取出消息数据
+                var data = (string)jsonnode!["data"]!;
+                var msg = JsonSerializer.Deserialize<RoomMessage>(data, options);// 取出消息数据
                 //Todo 与服务器交流，将用户发送内容提交到服务器
                 break;
             }

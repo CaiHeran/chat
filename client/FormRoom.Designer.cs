@@ -117,6 +117,7 @@
             Name = "FormRoom";
             Text = "FormRoom";
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
