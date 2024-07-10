@@ -25,8 +25,7 @@ namespace Client
 
         static public void Start()  // 创建一个线程处理消息
         {
-            Thread t = new(new ThreadStart(Processing));
-            t.Start();
+            Processing();
         }
 
         // 将消息放入队列
