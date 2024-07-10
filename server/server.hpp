@@ -1,4 +1,4 @@
-
+﻿
 #ifndef __SERVER_CPP__
 #define __SERVER_CPP__
 
@@ -20,7 +20,7 @@ struct Player;
 class Room;
 
 using User_ptr = std::shared_ptr<User>;
-using PlayRoom_ptr = std::shared_ptr<Room>;
+using Room_ptr = std::shared_ptr<Room>;
 
 void process(User_ptr p, json info);
 
@@ -28,7 +28,7 @@ class GlobalRoom
 {
 private:
     std::set<User_ptr> users;
-    std::map<int, PlayRoom_ptr> playrooms;
+    std::map<int, Room_ptr> rooms;
 
 public:
     void join(User_ptr user)
@@ -41,18 +41,18 @@ public:
         users.erase(user);
     }
 
-    PlayRoom_ptr create_room(User_ptr host)
+    Room_ptr create_room(User_ptr host)
     {
         int room_id = _new_id();
         auto room = std::make_shared<Room>(room_id, host);
-        playrooms.emplace(room_id, room);
+        rooms.emplace(room_id, room);
         return room;
     }
 
-    PlayRoom_ptr get_room(int room_id)
+    Room_ptr get_room(int room_id)
     {
         try {
-            return playrooms.at(room_id);
+            return rooms.at(room_id);
         }
         catch (std::out_of_range) {
             return nullptr;
@@ -104,9 +104,10 @@ public:
             detached);
     }
 
-    void deliver(const std::string& msg)
+    template<class T>
+    void deliver(T&& msg)
     {
-        write_msgs.push_back(msg);
+        write_msgs.emplace_back(std::forward<T>(msg));
         timer_.cancel_one();
         fmt::println("Deliver to {}: {}", info_.id, msg);
     }
@@ -116,9 +117,7 @@ public:
             {"type", type},
             {"data", msg}
         }.dump();
-        write_msgs.push_back(msg);
-        timer_.cancel_one();
-        fmt::println("Deliver to {}: {}", info_.id, msg);
+        deliver(message);
     }
 
     const Info& info() const
@@ -135,17 +134,13 @@ public:
     {
         return num;
     }
-    int get_order() const noexcept
-    {
-        return order;
-    }
 
     auto room()
     {
         return room_ptr;
     }
 
-    PlayRoom_ptr create_room()
+    Room_ptr create_room()
     {
         if (room_ptr) std::terminate();
         room_ptr = global_room.create_room(shared_from_this());
@@ -200,11 +195,11 @@ private:
             }
             else
             {
-                fmt::println("Sending:{}", write_msgs.front());
-                write_msgs.front()[write_msgs.front().size()] = '\n';
+                fmt::println("Sending to [{}]:{}", id(), write_msgs.front());
                 co_await asio::async_write(socket_,
-                    asio::buffer(write_msgs.front().data(), write_msgs.front().size()+1), use_awaitable);
+                    asio::buffer(write_msgs.front()), use_awaitable);
                 write_msgs.pop_front();
+                co_await asio::async_write(socket_, asio::buffer("\n"), use_awaitable);
             }
         }
     }
@@ -215,7 +210,7 @@ private:
 
     void stop()
     {
-        println("{} disconnected", id());
+        println("[{}] disconnected", id());
         global_room.leave(shared_from_this());
         socket_.shutdown();
         timer_.cancel();
@@ -230,8 +225,7 @@ private:
 private:
     friend class Room;  // 设置order
     int num=-1;     // -1代表未进入房间
-    int order=-1;   // -1代表未参加游戏
-    PlayRoom_ptr room_ptr;
+    Room_ptr room_ptr;
     Info info_;
 
     asio::ssl::stream<tcp::socket> socket_;
@@ -282,62 +276,13 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
     }
 }
 
-struct Player
-{
-    enum Type : bool {Human, Robot};
-    Type type;
-    int num;
-    User_ptr part_ptr;
-    Cards cards;
-};
-
 class Room
 {
 private:
-    struct Game;
     static constexpr int host_num = 1;
     const int room_id;
     int part_cnt=0;
     std::map<int, User_ptr> parts;
-    std::vector<Game> games;
-    struct Game
-    {
-        Cards origin;
-        std::vector<Player> players;
-        std::vector<Operation> ops;
-
-        Game(Room *upper, const Cards& cards, const std::vector<int>& nums)
-            : origin(cards)
-        {
-            int n = nums.size();
-            players.reserve(nums.size());
-            for (int i=0, num; i<n; i++)
-            {
-                num = nums[i];
-                players.emplace_back(Player{
-                    .type = num==-1? Player::Robot : Player::Human,
-                    .num = num,
-                    .part_ptr = upper->parts[num]
-                });
-                if (num != -1)
-                    upper->parts[num]->order = i;
-            }
-            _deal_cards(); // 然后洗牌
-        }
-
-        void _deal_cards();
-        json get_gameinfo();
-        void deliver();		// 给每位玩家发送房间信息和自己的牌
-
-        void push_op(Operation op)
-        {
-            ops.push_back(op);
-            /* TODO Robot
-            int cur = ops.size() % players.size();
-            */
-        }
-
-    };
 
 public:
     Room(int room_id, User_ptr host)
@@ -368,47 +313,29 @@ public:
             if (p->id() != except_id)
                 p->deliver(msg);
     }
+    void deliver(int type, const std::string& msg, const int except_id)
+    {
+        std::string message = json{
+            {"type", type},
+            {"data", msg}
+        }.dump();
+        deliver(message, except_id);
+    }
 
     int join(User_ptr p)
     {
         part_cnt++;
         parts.emplace(part_cnt, p);
         json roominfo = get_roominfo();
-        roominfo.emplace("type", 11);
         roominfo.emplace("num", part_cnt);
-        p->deliver(roominfo.dump());
+        p->deliver(21, roominfo.dump());
 
         json info {
-            {"type", 11},
             {"num", part_cnt},
             {"info", json(p->info())}
         };
-        deliver(info.dump(), p->id());
+        deliver(21, info.dump(), p->id());
         return part_cnt;
-    }
-
-    void new_game(const Cards& cards, const std::vector<int>& nums)
-    {
-        games.emplace_back(this, cards, nums);
-    }
-    void new_game(json info)
-    {
-        Cards cards(info["cards"].get<json::array_t>());
-        auto nums = info["list"].get<std::vector<int>>();
-        new_game(cards, nums);
-    }
-    // deliver initial info with cards info
-    void deliver_gameinfo()
-    {
-        games.back().deliver();
-    }
-
-    bool push_op(int order, json info)
-    {
-        Operation op(info);
-        if (!push_op(order, op))
-            return false;
-        deliver(info);
     }
 
     json get_roominfo()
@@ -432,23 +359,6 @@ public:
 
         return j;
     }
-
-private:
-    bool push_op(int order, Operation op)
-    {
-        if (games.back().ops.size() % games.back().players.size() != order)
-            return false;
-        games.back().push_op(op);
-        return true;
-    }
-    /**
-private:
-     * player和ops都是0起
-     * games.end().ops.size() % games.end().players.size() 就是当前出牌人
-     * 从games.end().ops中获取历史出牌
-     */
-    // Operation get_robot_op(/*水平*/);
-
 };
 
 bool User::join_room(int room_id)
@@ -461,55 +371,6 @@ bool User::join_room(int room_id)
     return true;
 }
 
-void Room::Game::_deal_cards()
-{
-    int n = players.size();
-    std::default_random_engine e(std::random_device{}());
-    std::vector<std::uint8_t> cardlist;
-    int total_cards = origin.count();
-    int player_cards = total_cards / n;
-    cardlist.reserve(total_cards);
-
-    for (int i=0; i<9; i++)
-    {
-        int m = *(reinterpret_cast<int*>(&origin) + i);
-        for (int j=0; j<m; j++)
-            cardlist.push_back(i);
-    }
-
-    std::ranges::shuffle(cardlist, e);
-
-    int i=0;
-    for (Player &player: players)
-    {
-        for (int j=0; j<player_cards; i++, j++)
-            ++*(reinterpret_cast<int*>(&player.cards) + cardlist[i]);
-    }
-}
-
-json Room::Game::get_gameinfo()
-{
-    json::array_t nums;
-    for (const auto& p: players)
-        nums.push_back(p.num);
-    json info {
-        {"type", 20},
-        {"list", std::move(nums)},
-        {"origin", json(origin)}
-    };
-    return info;
-}
-
-void Room::Game::deliver()
-{
-    json info = get_gameinfo();
-    info.emplace("self", json::array_t{});
-    for (const auto& p: players)
-    {
-        info["self"] = json(p.cards);
-        p.part_ptr->deliver(info.dump());
-    }
-}
 
 void process(User_ptr p, json message)
 {
@@ -520,7 +381,7 @@ void process(User_ptr p, json message)
         json info = json::parse(message["data"].get<std::string>());
         p->parse_info(info);
         info.emplace("id", p->info().id);
-        p->deliver(1, message.dump());
+        p->deliver(1, info.dump());
         break;
     }
     // 修改个人信息
@@ -536,7 +397,7 @@ void process(User_ptr p, json message)
         p->create_room();
         json info {
             {"type", 10},
-            {"id", p->room()->id()}
+            {"data", fmt::format(R"({{"id":"{}"}})", p->room()->id())}
         };
         p->deliver(info.dump());
         break;
@@ -546,12 +407,9 @@ void process(User_ptr p, json message)
         json info = json::parse(message["data"].get<std::string>());
         bool ec = ! p->join_room(info["id"].get<int>());
         if (ec) {
-            json info {
-                {"type", 11},
-                {"ec", (int)ec}
-            };
-            p->deliver(info.dump());
+            p->deliver(21, fmt::format(R"({{"ec":{}}})", (int)ec));
         }
+        //TODO
         break;
     }
     // 在房间中发送信息
@@ -559,28 +417,10 @@ void process(User_ptr p, json message)
         std::string data = message["data"].get<std::string>();
         json info = json::parse(data);
         //TODO check info["id"]==p->room().id();
-        p->room()->deliver(22, data);
+        p->room()->deliver(message.dump());
         break;
     }
 
-    case 30: {
-        //TODO: check whether p is the host
-        json info = json::parse(message["data"].get<std::string>());
-        p->room()->new_game(info);
-        p->room()->deliver_gameinfo();
-        break;
-    }
-    case 31: {
-        json info = json::parse(message["data"].get<std::string>());
-        int order = p->get_order();
-        bool ec = ! p->room()->push_op(order, info["op"]);
-        json infoback {
-            {"type", 21},
-            {"ec", (int)ec}
-        };
-        p->deliver(infoback.dump());
-        break;
-    }
     default:
         ;//TODO
     }

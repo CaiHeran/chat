@@ -24,7 +24,7 @@ auto make_cert(std::string CN)
 	X509_set_issuer_name(x509, name);
 	X509_sign(x509, pkey, EVP_sha256());
 
-	// µ¼³öË½Ô¿
+	// å¯¼å‡ºç§é’¥
 	BIO *bio = BIO_new(BIO_s_mem());
 	PEM_write_bio_PrivateKey(bio, pkey, nullptr, nullptr, 0, nullptr, nullptr);
 	EVP_PKEY_free(pkey);
@@ -33,14 +33,14 @@ auto make_cert(std::string CN)
 	prikey.resize(len);
 	BIO_read(bio, prikey.data(), len);
 	BIO_free(bio);
-	// µ¼³öx509Ö¤Êé
+	// å¯¼å‡ºx509è¯ä¹¦
 	std::string cert;
 	bio = BIO_new(BIO_s_mem());
 	PEM_write_bio_X509(bio, x509);
 	len = BIO_ctrl_pending(bio);
 	cert.resize(len);
 	BIO_read(bio, cert.data(), len);
-	// µ¼³öÖ¤ÊéµÄÖ¸ÎÆ
+	// å¯¼å‡ºè¯ä¹¦çš„æŒ‡çº¹
 	std::array<std::uint8_t, 20> sha1;
 	X509_digest(x509, EVP_sha1(), (unsigned char*)sha1.data(), nullptr);
 	
