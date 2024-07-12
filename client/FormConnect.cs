@@ -1,4 +1,5 @@
 using client;
+using Client;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Windows.Forms;
@@ -60,6 +61,13 @@ namespace Client
         private void button_mini_Click(object sender, EventArgs e)
         {
             this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void button_debug_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            FormGoBang formgobang = new FormGoBang();
+            formgobang.ShowDialog();
         }
     }
 }

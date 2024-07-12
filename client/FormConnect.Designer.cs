@@ -35,6 +35,7 @@
             button_connect = new Button();
             button_exit = new Button();
             button_mini = new Button();
+            button_debug = new Button();
             label1 = new Label();
             label2 = new Label();
             SuspendLayout();
@@ -115,6 +116,16 @@
             button_mini.UseVisualStyleBackColor = true;
             button_mini.Click += button_mini_Click;
             // 
+            // button_debug
+            // 
+            button_debug.Location = new Point(141, 259);
+            button_debug.Name = "button_debug";
+            button_debug.Size = new Size(75, 23);
+            button_debug.TabIndex = 7;
+            button_debug.Text = "debug";
+            button_debug.UseVisualStyleBackColor = true;
+            button_debug.Click += button_debug_Click;
+            // 
             // FormConnect
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
@@ -123,6 +134,7 @@
             BackgroundImageLayout = ImageLayout.Stretch;
             ClientSize = new Size(464, 321);
             ControlBox = false;
+            Controls.Add(button_debug);
             Controls.Add(button_mini);
             Controls.Add(button_exit);
             Controls.Add(button_connect);
@@ -146,5 +158,6 @@
         private Button button_connect;
         private Button button_exit;
         private Button button_mini;
+        private Button button_debug;
     }
 }
