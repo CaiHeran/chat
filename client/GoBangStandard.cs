@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace client
+namespace client//改Client
 {
     //数据
     internal class GoBangStandard

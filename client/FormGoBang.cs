@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace client
+namespace client//改Client
 {
     public partial class FormGoBang : Form
     {
@@ -37,8 +37,6 @@ namespace client
             InitializeComponent();
         }
 
-
-
         private void FormGoBang_Load(object sender, EventArgs e)
         {
             initchess();
@@ -49,9 +47,9 @@ namespace client
 
         private void panel_board_Paint(object sender, PaintEventArgs e)
         {
-            Graphics g = panel_board.CreateGraphics();      // 创建面板画布
-            GoBangChessBoard.DrawCB(g);                      // 调用画棋盘方法
-            //Chess.ReDrawC(panel_board, CheckBoard);         // 调用重新加载棋子方法
+            Graphics canva = panel_board.CreateGraphics();// 创建画布
+            GoBangBoard.DrawBoard(canva);                 // 画棋盘
+            GoBangPawn.LoadPawn(panel_board, chessboard);     // 加载棋子
         }
     }
 }
