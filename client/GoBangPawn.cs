@@ -19,12 +19,12 @@ namespace client//改Client
             canva.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
             //精确棋子的中心位置
-            int AccurateX = PlacementX * GoBangStandard.CGap + 20 - 17;
-            int AccurateY = PlacementY * GoBangStandard.CGap + 20 - 17;
+            int AccurateX = PlacementX * GoBangStandard.CGap + 10;
+            int AccurateY = PlacementY * GoBangStandard.CGap + 10;
 
             // 画棋子
             // 线性渐变，根据位置填颜色，从上至下渐变，使棋子具有真实感
-            if (turn) //画黑子
+            if (!turn) //画黑子
                 canva.FillEllipse(new LinearGradientBrush(new Point(20, 0), new Point(20, 40),
                     Color.FromArgb(122, 122, 122), Color.FromArgb(0, 0, 0)),
                     new Rectangle(

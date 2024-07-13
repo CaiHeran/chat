@@ -23,7 +23,9 @@ namespace client//改Client
 
         private void initchess()
         {
-            isplaying = false;
+            //isplaying = false;
+            isplaying = true;
+
             turn = false;
             myturn = true;//myturn = 服务器获取
             for (int i = 0; i <= size; i++)
@@ -49,7 +51,50 @@ namespace client//改Client
         {
             Graphics canva = panel_board.CreateGraphics();// 创建画布
             GoBangBoard.DrawBoard(canva);                 // 画棋盘
-            GoBangPawn.LoadPawn(panel_board, chessboard);     // 加载棋子
+            GoBangPawn.LoadPawn(panel_board, chessboard); // 加载棋子
+        }
+
+        private void panel_board_MouseDown(object sender, MouseEventArgs e)
+        {
+            // 判断游戏是否开始
+            if (!isplaying)
+            {
+                MessageBox.Show("游戏未开始", "游戏标题");
+                return;
+            }
+
+            byte content = 0;// 获取棋盘某格状态，0无1黑2白
+            //计算鼠标点击点位
+            int PlacementX = e.X / GoBangStandard.CGap;
+            int PlacementY = e.Y / GoBangStandard.CGap;
+            try // 防止鼠标点击边界，数组越界
+            {
+                // 有棋子不可落子
+                if (chessboard[PlacementX, PlacementY] != 0) return;
+                // 落子
+                if (turn)
+                {
+                    chessboard[PlacementX, PlacementY] = 2;
+                    content = 2;
+                    //pictureBox_turn.Image = "黑子.png";// 提示接下来"黑子回合"
+                }
+                else
+                {
+                    chessboard[PlacementX, PlacementY] = 1;
+                    content = 1; 
+                    //pictureBox_turn.Image = "白子.png";// 提示文本改为"白子回合"
+                }
+
+                GoBangPawn.DrawPawn(panel_board, turn, PlacementX, PlacementY);
+                if (GoBangStandard.WinJudge(chessboard, content))
+                {
+                    string result = (content == 1) ? "黑" : "白";
+                    MessageBox.Show($"{result}胜！", "游戏标题");
+                    initchess();// 初始化游戏
+                }
+                turn = !turn; // 换方执子
+            }
+            catch (Exception) { }
         }
     }
 }

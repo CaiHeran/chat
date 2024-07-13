@@ -121,6 +121,7 @@
             panel_board.Size = new Size(410, 410);
             panel_board.TabIndex = 8;
             panel_board.Paint += panel_board_Paint;
+            panel_board.MouseDown += panel_board_MouseDown;
             // 
             // panel_action
             // 
