@@ -23,8 +23,7 @@ namespace client//改成Client
             */
 
             // 用“画笔”画棋盘
-            //canva.Clear(Color.Transparent);// 清除画布、并设置画布透明——Requring fixing
-            canva.Clear(Color.Gray);
+            canva.Clear(Color.Transparent);// 清除画布、并设置画布透明——Requring fixing
             Pen pen = new Pen(Color.FromArgb(192, 166, 107));// 设置画笔棕色
             for (int i = 0; i < GapNum + 1; i++)//绘制棋盘
             {

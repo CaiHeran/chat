@@ -46,8 +46,8 @@ namespace client//改Client
             canva.SmoothingMode = SmoothingMode.HighQuality;
             canva.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-            for (int i = 0; i < chessboard.GetLength(1); i++)
-                for (int j = 0; j < chessboard.GetLength(0); j++)
+            for (int i = 1; i < chessboard.GetLength(1); i++)
+                for (int j = 1; j < chessboard.GetLength(0); j++)
                 {
                     // 获取某位置棋子状态
                     // 0表示没有，1表示黑子，2表示白子

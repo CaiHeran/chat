@@ -25,7 +25,6 @@ namespace client//改Client
         {
             //isplaying = false;
             isplaying = true;
-
             turn = false;
             myturn = true;//myturn = 服务器获取
             for (int i = 0; i <= size; i++)
@@ -49,52 +48,86 @@ namespace client//改Client
 
         private void panel_board_Paint(object sender, PaintEventArgs e)
         {
-            Graphics canva = panel_board.CreateGraphics();// 创建画布
-            GoBangBoard.DrawBoard(canva);                 // 画棋盘
-            GoBangPawn.LoadPawn(panel_board, chessboard); // 加载棋子
+            //绘制棋盘
+            Graphics canva = panel_board.CreateGraphics();
+            GoBangBoard.DrawBoard(canva);
+            //加载棋子状态
+            GoBangPawn.LoadPawn(panel_board, chessboard);
         }
-
         private void panel_board_MouseDown(object sender, MouseEventArgs e)
         {
             // 判断游戏是否开始
-            if (!isplaying)
-            {
-                MessageBox.Show("游戏未开始", "游戏标题");
-                return;
-            }
-
-            byte content = 0;// 获取棋盘某格状态，0无1黑2白
-            //计算鼠标点击点位
+            if (!isplaying){ MessageBox.Show("游戏未开始", "游戏标题"); return; }
+            int content = 0;//0无1黑2白
+            //计算鼠标点击位置
             int PlacementX = e.X / GoBangStandard.CGap;
             int PlacementY = e.Y / GoBangStandard.CGap;
-            try // 防止鼠标点击边界，数组越界
+
+            try// 防止鼠标点击边界，导致数组越界
             {
-                // 有棋子不可落子
-                if (chessboard[PlacementX, PlacementY] != 0) return;
-                // 落子
-                if (turn)
+                if (chessboard[PlacementX, PlacementY] != 0) return;                             
+                if (!turn)
                 {
-                    chessboard[PlacementX, PlacementY] = 2;
-                    content = 2;
-                    //pictureBox_turn.Image = "黑子.png";// 提示接下来"黑子回合"
+                    chessboard[PlacementX, PlacementY] = 1;
+                    content = 1;
+                    //pictureBox_turn.BackgroundImage = "白子.png";// 改为白出子
                 }
                 else
                 {
-                    chessboard[PlacementX, PlacementY] = 1;
-                    content = 1; 
-                    //pictureBox_turn.Image = "白子.png";// 提示文本改为"白子回合"
+                    chessboard[PlacementX, PlacementY] = 2;
+                    content = 2;                           
+                    //pictureBox_turn.BackgroundImage = "黑子.png";//改为出黑子
+                }
+                GoBangPawn.DrawPawn(panel_board, turn, PlacementX, PlacementY);  // 画棋子
+
+                // 一方获胜
+                if (Judge(chessboard, content))
+                {
+                    string result = content == 1 ? "黑" : "白";
+                    MessageBox.Show($"五连珠，{result}胜！", "游戏标题");
+                    initchess();//重置游戏
                 }
 
-                GoBangPawn.DrawPawn(panel_board, turn, PlacementX, PlacementY);
-                if (GoBangStandard.WinJudge(chessboard, content))
-                {
-                    string result = (content == 1) ? "黑" : "白";
-                    MessageBox.Show($"{result}胜！", "游戏标题");
-                    initchess();// 初始化游戏
-                }
-                turn = !turn; // 换方执子
+                turn = !turn;// 换方执子
             }
             catch (Exception) { }
+            return;
+        }
+
+        // 棋子判断
+        public static bool Judge(byte[,] chessboard, int content)
+        {
+            for (int i = 1; i < size+1; i++)
+            for (int j = 1; j < size+1; j++)
+            {
+                if (chessboard[j, i] == content)
+                {
+                    if (j < 11)
+                    if (chessboard[j + 1, i] == content
+                    && chessboard[j + 2, i] == content
+                    && chessboard[j + 3, i] == content
+                    && chessboard[j + 4, i] == content) return true;
+
+                    if (i < 11)
+                    if (chessboard[j, i + 1] == content
+                    && chessboard[j, i + 2] == content
+                    && chessboard[j, i + 3] == content
+                    && chessboard[j, i + 4] == content) return true;
+
+                    if (j < 11 && i < 11)
+                    if (chessboard[j + 1, i + 1] == content
+                    && chessboard[j + 2, i + 2] == content
+                    && chessboard[j + 3, i + 3] == content
+                    && chessboard[j + 4, i + 4] == content) return true;
+
+                    if (j > 3 && i < 11)
+                    if (chessboard[j - 1, i + 1] == content
+                    && chessboard[j - 2, i + 2] == content
+                    && chessboard[j - 3, i + 3] == content
+                    && chessboard[j - 4, i + 4] == content) return true;
+                }
+            }
+            return false;
         }
     }
 }
