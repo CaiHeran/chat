@@ -10,14 +10,19 @@ using System.Windows.Forms;
 
 namespace Client
 {
-    public partial class FormRoom : Form
+    public partial class FormChatRoom : Form
     {
-        public FormRoom()
+        public static FormChatRoom? formchatroom { get; set; }
+
+        public FormChatRoom()
         {
             InitializeComponent();
+            formchatroom = this;
+        }
+        public void FormChatRoom_Load(object sender, EventArgs e)
+        {
             listView_members_Load();
         }
-
         private void listView_members_Load()
         {
             // Todo 申请访问房间成员列表

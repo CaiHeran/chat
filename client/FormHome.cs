@@ -28,15 +28,14 @@ namespace Client
 
         EventHandler<RoomCreate>? fc;
         EventHandler<TryJoinRoom>? fj;
+
         private void button_CreateRoom_Click(object sender, EventArgs e)
         {
             fc = (_, info) =>
             {
             };
+            Process.Roomcreate += fc;
             Functions.CreateRoom();
-            this.Hide();
-            FormRoom formroom = new FormRoom(); 
-            formroom.ShowDialog();
         }
 
         private void button_JoinRoom_Click(object sender, EventArgs e)
@@ -45,6 +44,7 @@ namespace Client
             fj = (_, info) =>
             {
             };
+            Process.Tryjoinroom += fj;
             Functions.JoinRoom(DB.Me.Id);
         }
 

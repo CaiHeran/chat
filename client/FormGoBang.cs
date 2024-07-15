@@ -14,120 +14,69 @@ namespace client//改Client
     public partial class FormGoBang : Form
     {
         public static FormGoBang formgobang = new FormGoBang();
-
-        private bool isplaying = false;//棋局未开始
-        private bool turn = false;//黑先手
-        private bool myturn = true;//是否自己先手
-        public const int size = 13;//棋盘长宽
-        public byte[,] chessboard = new byte[size + 1, size + 1];
-
-        private void initchess()
-        {
-            //isplaying = false;
-            isplaying = true;
-            turn = false;
-            myturn = true;//myturn = 服务器获取
-            for (int i = 0; i <= size; i++)
-                for (int j = 0; j <= size; j++) chessboard[i, j] = 0;
-            //pictureBox_stand.BackgroundImage = "黑子.png";
-            //pictureBox_turn.BackgroundImage = "黑子.png";
-        }
-
         public FormGoBang()
         {
             InitializeComponent();
         }
-
         private void FormGoBang_Load(object sender, EventArgs e)
         {
-            initchess();
-            this.Width = GoBangStandard.Width;
-            this.Height = GoBangStandard.Height;
-            this.Location = new Point(GoBangStandard.PosX, GoBangStandard.PosY);
+            GoBang.InitChess();
+            this.Width = GoBang.Standard.Width;
+            this.Height = GoBang.Standard.Height;
+            this.Location = new Point(GoBang.Standard.PosX, GoBang.Standard.PosY);
         }
-
         private void panel_board_Paint(object sender, PaintEventArgs e)
         {
-            //绘制棋盘
-            Graphics canva = panel_board.CreateGraphics();
-            GoBangBoard.DrawBoard(canva);
-            //加载棋子状态
-            GoBangPawn.LoadPawn(panel_board, chessboard);
+            Graphics canva = panel_board.CreateGraphics();                                // 获取画布
+            GoBang.Board.DrawBoard(canva);                                                // 绘制棋盘
+            GoBang.Pawn.LoadPawn(panel_board, GoBang.ChessBoard);                         // 加载棋子状态
         }
         private void panel_board_MouseDown(object sender, MouseEventArgs e)
         {
-            // 判断游戏是否开始
-            if (!isplaying){ MessageBox.Show("游戏未开始", "游戏标题"); return; }
-            int content = 0;//0无1黑2白
-            //计算鼠标点击位置
-            int PlacementX = e.X / GoBangStandard.CGap;
-            int PlacementY = e.Y / GoBangStandard.CGap;
+            if (!GoBang.isplaying) { MessageBox.Show("游戏未开始", "游戏标题"); return; }  // 判断游戏是否开始
+            byte content = 0;                                                             // 0无1黑2白
+            int PlacementX = e.X / GoBang.Standard.CGap;                                  // 将鼠标点击屏幕位置转换为格子位置
+            int PlacementY = e.Y / GoBang.Standard.CGap;
 
-            try// 防止鼠标点击边界，导致数组越界
+            try                                                                           // 防止鼠标点击边界，导致数组越界
             {
-                if (chessboard[PlacementX, PlacementY] != 0) return;                             
-                if (!turn)
+                if (GoBang.ChessBoard[PlacementX, PlacementY] != 0) return;
+                if (!GoBang.turn)
                 {
-                    chessboard[PlacementX, PlacementY] = 1;
+                    GoBang.ChessBoard[PlacementX, PlacementY] = 1;
                     content = 1;
-                    //pictureBox_turn.BackgroundImage = "白子.png";// 改为白出子
+                    //pictureBox_turn.BackgroundImage = "白子.png";                      // 改为白出子
                 }
                 else
                 {
-                    chessboard[PlacementX, PlacementY] = 2;
-                    content = 2;                           
-                    //pictureBox_turn.BackgroundImage = "黑子.png";//改为出黑子
+                    GoBang.ChessBoard[PlacementX, PlacementY] = 2;
+                    content = 2;
+                    //pictureBox_turn.BackgroundImage = "黑子.png";                      // 改为出黑子
                 }
-                GoBangPawn.DrawPawn(panel_board, turn, PlacementX, PlacementY);  // 画棋子
+                GoBang.Pawn.DrawPawn(panel_board, GoBang.turn, PlacementX, PlacementY);  // 画棋子
 
                 // 一方获胜
-                if (Judge(chessboard, content))
+                if (GoBang.WinJudge(GoBang.ChessBoard, content))
                 {
                     string result = content == 1 ? "黑" : "白";
                     MessageBox.Show($"五连珠，{result}胜！", "游戏标题");
-                    initchess();//重置游戏
+                    GoBang.InitChess();//重置游戏
                 }
 
-                turn = !turn;// 换方执子
+                GoBang.turn = !GoBang.turn;// 换方执子
             }
             catch (Exception) { }
             return;
         }
 
-        // 棋子判断
-        public static bool Judge(byte[,] chessboard, int content)
+        private void button_exit_Click(object sender, EventArgs e)
         {
-            for (int i = 1; i < size+1; i++)
-            for (int j = 1; j < size+1; j++)
-            {
-                if (chessboard[j, i] == content)
-                {
-                    if (j < 11)
-                    if (chessboard[j + 1, i] == content
-                    && chessboard[j + 2, i] == content
-                    && chessboard[j + 3, i] == content
-                    && chessboard[j + 4, i] == content) return true;
-
-                    if (i < 11)
-                    if (chessboard[j, i + 1] == content
-                    && chessboard[j, i + 2] == content
-                    && chessboard[j, i + 3] == content
-                    && chessboard[j, i + 4] == content) return true;
-
-                    if (j < 11 && i < 11)
-                    if (chessboard[j + 1, i + 1] == content
-                    && chessboard[j + 2, i + 2] == content
-                    && chessboard[j + 3, i + 3] == content
-                    && chessboard[j + 4, i + 4] == content) return true;
-
-                    if (j > 3 && i < 11)
-                    if (chessboard[j - 1, i + 1] == content
-                    && chessboard[j - 2, i + 2] == content
-                    && chessboard[j - 3, i + 3] == content
-                    && chessboard[j - 4, i + 4] == content) return true;
-                }
-            }
-            return false;
+            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.No) return;
+            this.Close();
+            Application.Exit();
+            Application.ExitThread();
+            Environment.Exit(0);
         }
     }
 }

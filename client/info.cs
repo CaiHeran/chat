@@ -57,8 +57,42 @@
     // 22 在房间中发送消息
     struct RoomMessage : Info
     {
-        public const int type = 22;//fixed
+        public const int type = 22;
         public int id;  // room id
         public string message;
+    }
+
+    struct ChatRoomStart : Info
+    {
+        public const int type = 1001;
+        // todo
+    }
+    struct ChatRoomSend : Info//发送消息
+    {
+        public const int type = 1002;
+        public string msg;
+        // todo
+    }
+    struct ChatRoomEnd : Info//房主退出
+    {
+        public const int type = 1003;
+        // todo
+    }
+    struct GoBangStart : Info
+    {
+        public const int type = 2001;
+        // Todo
+    }
+    struct GoBangMoment : Info
+    {
+        public const int type = 2002;
+        public int posx, posy;//棋盘坐标行列
+        // Todo
+    }
+    struct GoBangResult : Info
+    {
+        public const int type = 2003;
+        // winner
+        // todo
     }
 }
