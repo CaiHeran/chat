@@ -19,23 +19,22 @@ namespace Client
 {
     internal static class Server
     {
-        private static SslStream stream;
-        private static AsyncQueue<string> messages = new();
-
-        public static void Connect(string host, int port)
+        private static SslStream stream;                                              // ？
+        private static AsyncQueue<string> messages = new();                           // 消息队列
+        public static void Connect(string host, int port)                             // 连接服务器，参数为服务器和端口
         {
-            TcpClient client = new TcpClient(host, port);
+            TcpClient client = new TcpClient(host, port);                             // ？
             SslStream sslStream = new SslStream(
                 client.GetStream(),
                 false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate),
                 null
             );
-            try
+            try                                                                      // 连接成功
             {
                 sslStream.AuthenticateAsClient("");
             }
-            catch (AuthenticationException e)
+            catch (AuthenticationException e)                                        // 连接失败
             {
                 Console.WriteLine("Exception: {0}", e.Message);
                 if (e.InnerException != null)
@@ -45,20 +44,20 @@ namespace Client
                 client.Close();
                 return;
             }
-            stream = sslStream;
-            Reader();
-            Writer();
+            stream = sslStream;                                                      // ？
+            Reader();                                                                // ？
+            Writer();                                                                // ？
         }
 
-        public static void Send(string message)
+        public static void Send(string message)                                       // 发送消息（下层）
         {
-            messages.Enqueue(message);
+            messages.Enqueue(message);                                                // 将发送消息的事件加入队列
         }
-        public static void Send(int type, string data)
+        public static void Send(int type, string data)                                // 发送消息（上层）
         {
             Send($$"""{"type":{{type}},"data":{{JsonSerializer.Serialize(data)}}}""");
         }
-        private static async void Writer()
+        private static async void Writer()                                            // ？
         {
             StreamWriter writer = new(stream);
             while (true)
@@ -68,7 +67,7 @@ namespace Client
                 writer.Flush();
             }
         }
-        private static async void Reader()
+        private static async void Reader()                                            // ？
         {
             StreamReader sr = new(stream);
             while (true)
@@ -80,7 +79,7 @@ namespace Client
                 Process.ProcessMessage(msg);
             }
         }
-        private static bool ValidateServerCertificate(
+        private static bool ValidateServerCertificate(                                // ？
                 object sender,
                 X509Certificate certificate,
                 X509Chain chain,
