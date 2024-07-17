@@ -11,59 +11,59 @@ using System.Windows.Forms;
 
 namespace client//改Client
 {
-    public partial class FormGoBang : Form
+    public partial class FormGobang : Form
     {
-        public static FormGoBang formgobang = new FormGoBang();
-        public FormGoBang()
+        public static FormGobang formGobang = new FormGobang();
+        public FormGobang()
         {
             InitializeComponent();
         }
-        private void FormGoBang_Load(object sender, EventArgs e)
+        private void FormGobang_Load(object sender, EventArgs e)
         {
-            GoBang.InitChess();
-            this.Width = GoBang.Standard.Width;
-            this.Height = GoBang.Standard.Height;
-            this.Location = new Point(GoBang.Standard.PosX, GoBang.Standard.PosY);
+            Gobang.InitChess();
+            this.Width = Gobang.Standard.Width;
+            this.Height = Gobang.Standard.Height;
+            this.Location = new Point(Gobang.Standard.PosX, Gobang.Standard.PosY);
         }
         private void panel_board_Paint(object sender, PaintEventArgs e)
         {
             Graphics canva = panel_board.CreateGraphics();                                // 获取画布
-            GoBang.Board.DrawBoard(canva);                                                // 绘制棋盘
-            GoBang.Pawn.LoadPawn(panel_board, GoBang.ChessBoard);                         // 加载棋子状态
+            Gobang.Board.DrawBoard(canva);                                                // 绘制棋盘
+            Gobang.Pawn.LoadPawn(panel_board, Gobang.ChessBoard);                         // 加载棋子状态
         }
         private void panel_board_MouseDown(object sender, MouseEventArgs e)
         {
-            if (!GoBang.isplaying) { MessageBox.Show("游戏未开始", "游戏标题"); return; }  // 判断游戏是否开始
+            if (!Gobang.isplaying) { MessageBox.Show("游戏未开始", "游戏标题"); return; }  // 判断游戏是否开始
             byte content = 0;                                                             // 0无1黑2白
-            int PlacementX = e.X / GoBang.Standard.CGap;                                  // 将鼠标点击屏幕位置转换为格子位置
-            int PlacementY = e.Y / GoBang.Standard.CGap;
+            int PlacementX = e.X / Gobang.Standard.CGap;                                  // 将鼠标点击屏幕位置转换为格子位置
+            int PlacementY = e.Y / Gobang.Standard.CGap;
 
             try                                                                           // 防止鼠标点击边界，导致数组越界
             {
-                if (GoBang.ChessBoard[PlacementX, PlacementY] != 0) return;
-                if (!GoBang.turn)
+                if (Gobang.ChessBoard[PlacementX, PlacementY] != 0) return;
+                if (!Gobang.turn)
                 {
-                    GoBang.ChessBoard[PlacementX, PlacementY] = 1;
+                    Gobang.ChessBoard[PlacementX, PlacementY] = 1;
                     content = 1;
                     //pictureBox_turn.BackgroundImage = "白子.png";                      // 改为白出子
                 }
                 else
                 {
-                    GoBang.ChessBoard[PlacementX, PlacementY] = 2;
+                    Gobang.ChessBoard[PlacementX, PlacementY] = 2;
                     content = 2;
                     //pictureBox_turn.BackgroundImage = "黑子.png";                      // 改为出黑子
                 }
-                GoBang.Pawn.DrawPawn(panel_board, GoBang.turn, PlacementX, PlacementY);  // 画棋子
+                Gobang.Pawn.DrawPawn(panel_board, Gobang.turn, PlacementX, PlacementY);  // 画棋子
 
                 // 一方获胜
-                if (GoBang.WinJudge(GoBang.ChessBoard, content))
+                if (Gobang.WinJudge(Gobang.ChessBoard, content))
                 {
                     string result = content == 1 ? "黑" : "白";
                     MessageBox.Show($"五连珠，{result}胜！", "游戏标题");
-                    GoBang.InitChess();//重置游戏
+                    Gobang.InitChess();//重置游戏
                 }
 
-                GoBang.turn = !GoBang.turn;// 换方执子
+                Gobang.turn = !Gobang.turn;// 换方执子
             }
             catch (Exception) { }
             return;

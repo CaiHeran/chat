@@ -8,7 +8,7 @@ using System.Drawing.Drawing2D;
 
 namespace client// 改Client
 {
-    internal class GoBang
+    internal class Gobang
     {
         internal static bool isplaying = false;                                       // 棋局状态（未开始）
         internal static bool turn = false;                                            // 着手状态（黑先手）

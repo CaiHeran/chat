@@ -78,18 +78,18 @@
         public const int type = 1003;
         // todo
     }
-    struct GoBangStart : Info
+    struct GobangStart : Info
     {
         public const int type = 2001;
         // Todo
     }
-    struct GoBangMoment : Info
+    struct GobangMoment : Info
     {
         public const int type = 2002;
         public int posx, posy;//棋盘坐标行列
         // Todo
     }
-    struct GoBangResult : Info
+    struct GobangResult : Info
     {
         public const int type = 2003;
         // winner

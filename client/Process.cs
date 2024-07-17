@@ -40,15 +40,12 @@ namespace Client
             while (true)
             {
                 process(await ProcessQueue.DequeueAsync());
-                /* Todo:在处理一个消息后UI更新数据，
-                 * 更新代码与消息类型紧密相关，建议通过Handle设计代码
-                 * 或者说这算是一个疑惑，怎么在处理消息附加代码
-                */
             }
         }
 
-        static private void process(string msgstr)
+        static private void process(string msgstr)//处理由服务器发来的消息
         {
+            MessageBox.Show("客户端process");
             var jsonnode = JsonNode.Parse(msgstr);//字符串消息转化为可处理数据
             int msgtype = (int)jsonnode!["type"]!;//取出消息类型
             var options = new JsonSerializerOptions
@@ -69,7 +66,7 @@ namespace Client
             case 10: // 设置个人信息
             {
                 var data = (string)jsonnode!["data"]!;
-                var msg = JsonSerializer.Deserialize<UserInfo>(data, options);//取出消息数据
+                UserInfo msg = JsonSerializer.Deserialize<UserInfo>(data, options);//取出消息数据
                 DB.Me.SetName(msg.name);//将用户数据放入数据库
                 Userinfo?.Invoke(null, msg);
 
@@ -78,7 +75,7 @@ namespace Client
             case 20: // 用户创建房间，服务器分配 room_id
             {
                 var data = (string)jsonnode!["data"]!;
-                var msg = JsonSerializer.Deserialize<RoomCreate>(data, options);
+                RoomCreate msg = JsonSerializer.Deserialize<RoomCreate>(data, options);
                 if (msg.ec != 0)
                 {
                     //Todo，处理异常
@@ -90,9 +87,9 @@ namespace Client
                 break;
             }
             case 21: // 用户尝试进入房间
-                    {
-                        var data = (string)jsonnode!["data"]!;
-                        var msg = JsonSerializer.Deserialize<JoinRoom>(data, options);
+            {
+                var data = (string)jsonnode!["data"]!;
+                var msg = JsonSerializer.Deserialize<JoinRoom>(data, options);
                 if (msg.ec != 0)
                 {
                     //Todo，处理异常
@@ -108,7 +105,7 @@ namespace Client
             {
                 var data = (string)jsonnode!["data"]!;
                 var msg = JsonSerializer.Deserialize<RoomMessage>(data, options);// 取出消息数据
-                //Todo 与服务器交流，将用户发送内容提交到服务器
+                
                 break;
             }
             }

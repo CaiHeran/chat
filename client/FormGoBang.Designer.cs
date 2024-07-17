@@ -1,6 +1,6 @@
 ﻿namespace client
 {
-    partial class FormGoBang
+    partial class FormGobang
     {
         /// <summary>
         /// Required designer variable.
@@ -169,7 +169,7 @@
             button_exit.UseVisualStyleBackColor = true;
             button_exit.Click += button_exit_Click;
             // 
-            // FormGoBang
+            // FormGobang
             // 
             AutoScaleDimensions = new SizeF(11F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -182,9 +182,9 @@
             Controls.Add(panel_board);
             DoubleBuffered = true;
             Margin = new Padding(5, 4, 5, 4);
-            Name = "FormGoBang";
+            Name = "FormGobang";
             Text = "游戏标题";
-            Load += FormGoBang_Load;
+            Load += FormGobang_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox_stand).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox_turn).EndInit();
             panel_action.ResumeLayout(false);

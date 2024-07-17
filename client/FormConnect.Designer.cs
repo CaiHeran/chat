@@ -126,7 +126,7 @@
             button_debug.Name = "button_debug";
             button_debug.Size = new Size(155, 34);
             button_debug.TabIndex = 7;
-            button_debug.Text = "DebugGoBang";
+            button_debug.Text = "DebugGobang";
             button_debug.UseVisualStyleBackColor = true;
             button_debug.Click += button_debug_Click;
             // 

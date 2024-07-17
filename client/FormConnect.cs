@@ -66,8 +66,8 @@ namespace Client
         private void button_debug_Click(object sender, EventArgs e)
         {
             this.Hide();
-            FormGoBang formgobang = new FormGoBang();
-            formgobang.ShowDialog();
+            FormGobang formGobang = new FormGobang();
+            formGobang.ShowDialog();
         }
     }
 }
