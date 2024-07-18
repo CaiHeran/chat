@@ -33,19 +33,35 @@ namespace Client
         {
             fc = (_, info) =>
             {
+                Createroom_Callback();
+                this.Hide();
+                new FormChatRoom();
+                FormChatRoom.formchatroom!.Show();
+                //
             };
             Process.Roomcreate += fc;
             Functions.CreateRoom();
         }
+        private void Createroom_Callback()
+        {
+            Process.Roomcreate -= fc;
+        }
 
         private void button_JoinRoom_Click(object sender, EventArgs e)
         {
-            int id = int.Parse(textBox_id.Text);
+            int room_id = int.Parse(textBox_id.Text);
             fj = (_, info) =>
             {
+                Joinroom_Callback();
+                this.Hide();
+                //TODO
             };
             Process.Tryjoinroom += fj;
             Functions.JoinRoom(DB.Me.Id);
+        }
+        private void Joinroom_Callback()
+        {
+            Process.Tryjoinroom -= fj;
         }
 
         private void button_exit_Click(object sender, EventArgs e)

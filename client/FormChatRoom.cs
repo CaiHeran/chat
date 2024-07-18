@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Info;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -32,8 +33,13 @@ namespace Client
         // button_send
         private void button_send_Click(object sender, EventArgs e)
         {
-            string msg = textBox_input.Text;
+            string msg = richTextBox_input.Text;
             Functions.SendMessage(msg);
+        }
+
+        public void Receive_message(RoomMessage message)
+        {
+            //TODO
         }
 
         private void button_exit_Click(object sender, EventArgs e)

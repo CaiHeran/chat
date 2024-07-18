@@ -1,9 +1,10 @@
-﻿using Microsoft.VisualStudio.Threading;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using Info;
 
 namespace Client
 {
@@ -21,6 +22,11 @@ namespace Client
             Id = id;
             Name = name;
         }
+        public User(UserBriefInfo info)
+        {
+            Id = info.id;
+            Name = info.name;
+        }
 
         public void SetId(int id) => Id = id;
         public void SetName(string name) => Name = name;
@@ -31,15 +37,15 @@ namespace Client
     {
         public int Id { get; private set; }
         public int Num { get; private set; }
-        // 成员映射
-        public Dictionary<int, User> Parts { get; private set; } = [];
+        // 成员列表: num -> user
+        public Dictionary<int, User> Parts { get; private set; } = []; // 1号为房主
 
         // 创建房间时构造
         public Room(int id)
         {
             Id = id;
             Num = 0;
-            Parts.Add(0, DB.Me);
+            Parts.Add(1, DB.Me);
         }
         // 加入房间时构造
         public Room(int id, int mynum, Dictionary<int, Info.UserBriefInfo> parts)
@@ -48,10 +54,19 @@ namespace Client
             Num = mynum;
             foreach (var (num, info) in parts)
             {
-                Parts.Add(num, new User(info.id, info.name));
+                Parts.Add(num, new User(info));
             }
         }
-        //public Join(int id, int num)
+
+        public void Join(int num, User user)
+        {
+            Parts.Add(num, user);
+        }
+
+        public void Leave(int num)
+        {
+            Parts.Remove(num);
+        }
     }
 
     //数据库，包含用户信息和房间信息

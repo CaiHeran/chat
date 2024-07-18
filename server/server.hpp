@@ -15,13 +15,11 @@ using asio::co_spawn;
 using asio::detached;
 using asio::use_awaitable;
 
-class GlobalRoom;                                                  // 服务器全局信息
-class User;                                                        // 用户信息
-struct Player;                                                     // ？？？
-class Room;                                                        // 犯贱信息
-
-using User_ptr = std::shared_ptr<User>;                            // 用户地址
-using Room_ptr = std::shared_ptr<Room>;                            // 房间地址
+class GlobalRoom;
+class User;
+class Room;
+using User_ptr = std::shared_ptr<User>;
+using Room_ptr = std::shared_ptr<Room>;
 
 void process(User_ptr p, json info);                               // 处理由客户端发来的消息
 
@@ -37,8 +35,8 @@ public:
     Room_ptr create_room(User_ptr host)                            // 创建房间
     {
         int room_id = _new_id();                                   // 获取房间id
-        Room_ptr room = std::make_shared<Room>(room_id, host);     // 房间初始化并获取房间地址
-        rooms.emplace(room_id, room);                              // 将房间信息和地址放入映射
+        Room_ptr room = std::make_shared<Room>(room_id, host);     // 房间初始化并获取房间
+        rooms.emplace(room_id, room);                              // 存储房间信息和地址
         return room;
     }
 
@@ -113,8 +111,8 @@ public:
     const Info& info() const {return info_;}                           // 获取用户信息
     int id() const noexcept {return info_.id;}                         // 获取用户id
     int get_num() const noexcept{return num;}                          // 获取？？？
-    Room_ptr room() { return room_ptr; }                               // 获取所在房间地址
-    Room_ptr create_room()                                             // 创建犯贱并返回地址
+    Room_ptr room() { return room_ptr; }                               // 获取所在房间
+    Room_ptr create_room()                                             // 创建房间并返回
     {
         if (room_ptr) std::terminate();
         room_ptr = global_room.create_room(shared_from_this());

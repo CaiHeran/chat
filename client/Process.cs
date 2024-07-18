@@ -23,7 +23,7 @@ namespace Client
 
         static private AsyncQueue<string> ProcessQueue = new();
 
-        static public void Start()  // 创建一个线程处理消息
+        static public void Start()
         {
             Processing();
         }
@@ -45,7 +45,6 @@ namespace Client
 
         static private void process(string msgstr)//处理由服务器发来的消息
         {
-            MessageBox.Show("客户端process");
             var jsonnode = JsonNode.Parse(msgstr);//字符串消息转化为可处理数据
             int msgtype = (int)jsonnode!["type"]!;//取出消息类型
             var options = new JsonSerializerOptions
@@ -57,33 +56,25 @@ namespace Client
             case 1:  // 注册
             {
                 var data = (string)jsonnode!["data"]!;
-                Login msg = JsonSerializer.Deserialize<Login>(data, options);//取出消息数据
-                DB.Me = new User(msg.id, msg.name);//将用户数据（id和name）放入数据库
+                Login msg = JsonSerializer.Deserialize<Login>(data, options);
+                DB.Me = new User(msg.id, msg.name); // 将用户数据（id和name）放入数据库
                 Login?.Invoke(null, msg);
                 break;
             }
-            
             case 10: // 设置个人信息
             {
                 var data = (string)jsonnode!["data"]!;
-                UserInfo msg = JsonSerializer.Deserialize<UserInfo>(data, options);//取出消息数据
-                DB.Me.SetName(msg.name);//将用户数据放入数据库
+                UserInfo msg = JsonSerializer.Deserialize<UserInfo>(data, options);
+                DB.Me.SetName(msg.name); // 将用户数据存入数据库
                 Userinfo?.Invoke(null, msg);
-
                 break;
             }
             case 20: // 用户创建房间，服务器分配 room_id
             {
                 var data = (string)jsonnode!["data"]!;
                 RoomCreate msg = JsonSerializer.Deserialize<RoomCreate>(data, options);
-                if (msg.ec != 0)
-                {
-                    //Todo，处理异常
-                }
-                else
-                {
-                    DB.Room = new(msg.id);//无异常，创建房间
-                }
+                DB.Room = new(msg.id); // 创建房间
+                Roomcreate?.Invoke(null, msg);
                 break;
             }
             case 21: // 用户尝试进入房间

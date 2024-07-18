@@ -27,13 +27,9 @@ namespace Client
 
         EventHandler<Login>? f;
 
-        // buttons
-        // button_login
-        //
         private void button_login_Click(object sender, EventArgs e)
         {
             f = (_, info) => {
-                //Requiring fixing
                 Login_callback();
                 formlogin!.Hide();
                 new FormHome();
@@ -45,12 +41,9 @@ namespace Client
 
         public void Login_callback()
         {
-            Process.Login -= f;//???
+            Process.Login -= f;
         }
-        
-        //
-        // button_exit
-        //
+
         private void button_exit_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);

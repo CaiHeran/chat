@@ -13,33 +13,33 @@
     {
         public const int type = 1;
         public string name;
-        public int id;//个人id
+        public int id; // user id
     }
 
     // 10 用户设置个人信息
-    struct UserInfo : Info
+    public struct UserInfo : Info
     {
         public const int type = 10;
         public string name;
     }
 
     // 20 用户创建房间，服务器分配 room_id
-    struct RoomCreate : Info
+    public struct RoomCreate : Info
     {
         public const int type = 20;
-        public int ec;
-        public int id;//房间id
+        public int id; // room id
     }
 
     // 21 用户尝试进入房间
-    struct TryJoinRoom : Info
+    public struct TryJoinRoom : Info
     {
         public const int type = 21;
-        public int id;//房间id
+        public int ec;
+        public int id; // room id
     }
 
     // 21 进入房间成功/失败
-    struct JoinRoom : Info
+    public struct JoinRoom : Info
     {
         public const int type = 21;
         public int id;
@@ -48,14 +48,28 @@
         public Dictionary<int, UserBriefInfo> parts;
     }
 
-    struct UserBriefInfo : Info
+    public struct UserBriefInfo : Info
     {
         public int id;
         public string name;
     }
 
+/* TODO 
+    class Message: Info    // or record
+    {
+        public int user;
+        public DateTime time;
+        public string message;
+    }
+
     // 22 在房间中发送消息
-    struct RoomMessage : Info
+    class RoomMessage : Message
+    {
+        public const int type = 22;
+        public int roomid;  // room id
+    }
+*/
+    public struct RoomMessage : Info
     {
         public const int type = 22;
         public int id;  // room id
