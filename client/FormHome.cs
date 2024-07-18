@@ -54,7 +54,8 @@ namespace Client
             {
                 Joinroom_Callback();
                 this.Hide();
-                //TODO
+                new FormChatRoom();
+                FormChatRoom.formchatroom!.Show();
             };
             Process.Tryjoinroom += fj;
             Functions.JoinRoom(DB.Me.Id);

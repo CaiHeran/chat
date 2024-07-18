@@ -96,9 +96,12 @@ namespace Client
             }
             case 22: // 在房间中发送消息
             {
-                var data = (string)jsonnode!["data"]!;
-                var msg = JsonSerializer.Deserialize<RoomMessage>(data, options);// 取出消息数据
-                
+                string? data = (string)jsonnode!["data"]!;
+                RoomMessage msg = JsonSerializer.Deserialize<RoomMessage>(data, options);// 取出消息数据
+                int sender_id = msg.id;
+                string message = msg.message;
+
+                FormChatRoom.add_text($"{sender_id} : {message}");
                 break;
             }
             }

@@ -37,11 +37,6 @@ namespace Client
             Functions.SendMessage(msg);
         }
 
-        public void Receive_message(RoomMessage message)
-        {
-            //TODO
-        }
-
         private void button_exit_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -55,5 +50,10 @@ namespace Client
         // richTextBoxs
         // richTextBox_view
         // Todo：怎样实现文本实时更新
+        public static void add_text(string text)
+        {
+            richTextBox_view.AppendText(text + "\n");
+            return;
+        }
     }
 }
