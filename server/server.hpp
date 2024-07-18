@@ -144,7 +144,7 @@ private:
         {
             std::size_t n = co_await asio::async_read_until(socket_,
                 asio::dynamic_buffer(s, 256), '\n', use_awaitable);
-            std::string_view sv(s.data(), s.data()+n);
+            std::string_view sv(s.data(), s.data()+n-1); // 去除\r(CR)
             println("Receive from [{}]: {}", info_.id, sv);
             process(shared_from_this(), json::parse(sv));
             s.erase(0, n);
@@ -170,7 +170,7 @@ private:
                 co_await asio::async_write(socket_,
                     asio::buffer(write_msgs.front()), use_awaitable);
                 write_msgs.pop_front();
-                co_await asio::async_write(socket_, asio::buffer("\n"), use_awaitable);
+                co_await asio::async_write(socket_, asio::buffer("\r\n"), use_awaitable);
             }
         }
     }
@@ -364,7 +364,7 @@ void process(User_ptr p, json message)//见上面
         p->create_room();
         json info {
             {"type", 20},//bug fixed
-            {"data", format(R"({{"id":"{}"}})", p->room()->id())}
+            {"data", format(R"({{"id":{}}})", p->room()->id())}
         };
         p->deliver(info.dump());
         break;

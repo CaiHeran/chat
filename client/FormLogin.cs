@@ -33,7 +33,7 @@ namespace Client
                 Login_callback();
                 formlogin!.Hide();
                 new FormHome();
-                FormHome.formhome!.ShowDialog();
+                FormHome.formhome!.Show();
             };
             Process.Login += f;
             Functions.Login(textBox_name.Text);

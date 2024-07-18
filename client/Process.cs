@@ -45,6 +45,8 @@ namespace Client
 
         static private void process(string msgstr)//处理由服务器发来的消息
         {
+            if (msgstr[0]=='\0')
+                msgstr = msgstr.Remove(0, 1);
             var jsonnode = JsonNode.Parse(msgstr);//字符串消息转化为可处理数据
             int msgtype = (int)jsonnode!["type"]!;//取出消息类型
             var options = new JsonSerializerOptions

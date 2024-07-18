@@ -1,5 +1,3 @@
-using client;
-using Client;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Windows.Forms;
@@ -27,7 +25,8 @@ namespace Client
 
             try
             {
-                Server.Connect(host, port);
+                if (!Server.Connect(host, port))
+                    return;
             }
             catch (Exception ex)
             {
@@ -38,10 +37,7 @@ namespace Client
                 return;
             }
 
-            Process.Start();
-            this.Hide();
-            FormLogin.formlogin = new FormLogin();
-            FormLogin.formlogin.ShowDialog();
+            Close();
         }
         //
         // button_exit_Click
@@ -61,13 +57,6 @@ namespace Client
         private void button_mini_Click(object sender, EventArgs e)
         {
             this.WindowState = FormWindowState.Minimized;
-        }
-
-        private void button_debug_Click(object sender, EventArgs e)
-        {
-            this.Hide();
-            FormGobang formGobang = new FormGobang();
-            formGobang.ShowDialog();
         }
     }
 }
