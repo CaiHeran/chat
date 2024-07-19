@@ -26,8 +26,7 @@ namespace Client
 
         public static void SetMyInfo(string name)
         {
-            UserInfo info;
-            info.name = name;
+            UserInfo info = new(name);
             Server.Send(10, JsonSerializer.Serialize(info, options));
         }
 
@@ -39,17 +38,18 @@ namespace Client
 
         public static void JoinRoom(int id)
         {
-            var msg = new TryJoinRoom { id = id };
-            Server.Send(21, JsonSerializer.Serialize(msg, options));
+            Server.Send(21, $$"""{"id":{{id}}}""");
         }
 
         public static void SendMessage(string message)
         {
             // check
-            var msg = new RoomMessage {
-                id = DB.Room!.Id,
-                message = message
-            };
+            var msg = new RoomMessage (
+                DateTime.Now,
+                DB.Me!.Id,
+                DB.Room!.Id,
+                message
+            );
             Server.Send(22, JsonSerializer.Serialize(msg, options));
         }
     }

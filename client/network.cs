@@ -60,7 +60,7 @@ namespace Client
         }
         public static void Send(int type, string data)                                // 发送消息（上层整合）
         {
-            Send($$"""{"type":{{type}},"data":{{JsonSerializer.Serialize(data)}}}""");
+            Send($$"""{"type":{{type}},"data":{{data}}}""");
         }
         private static async Task Writer()                                            // 输出？？？
         {

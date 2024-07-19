@@ -99,11 +99,12 @@ public:
         timer_.cancel_one();                                           // ？？？
         println("Deliver to {}: {}", info_.id, msg);
     }
-    void deliver(int type, const std::string& data)                    // 输出被递送的消息（上层）——（吴桐：将msg改为data）
+    template<class T>
+    void deliver(int type, T&& data)                    // 输出被递送的消息（上层）——（吴桐：将msg改为data）
     {
         std::string message = json{                                    // 消息由数据转为信息
             {"type", type},
-            {"data", data}
+            {"data", std::forward<T>(data)}
         }.dump();
         deliver(message);
     }
@@ -345,15 +346,15 @@ void process(User_ptr p, json message)//见上面
     {
     // 注册
     case 1: {
-        json info = json::parse(message["data"].get<std::string>());
+        json info = message["data"];
         p->parse_info(info);
         info.emplace("id", p->info().id);
-        p->deliver(1, info.dump());
+        p->deliver(1, info);
         break;
     }
     // 修改个人信息
     case 10: {
-        json info = json::parse(message["data"].get<std::string>());
+        json info = message["data"];
         p->parse_info(info);
         p->deliver(message.dump());
         break;
@@ -364,24 +365,23 @@ void process(User_ptr p, json message)//见上面
         p->create_room();
         json info {
             {"type", 20},//bug fixed
-            {"data", format(R"({{"id":{}}})", p->room()->id())}
+            {"data", {{"id", p->room()->id()}}}
         };
         p->deliver(info.dump());
         break;
     }
     // 加入房间
     case 21: {
-        json info = json::parse(message["data"].get<std::string>());
+        json info = message["data"];
         bool ec = ! p->join_room(info["id"].get<int>());
         if (ec) {
-            p->deliver(21, format(R"({{"ec":{}}})", (int)ec));
+            p->deliver(21, json{{"ec", (int)ec}});
         }
         break;
     }
     // 在房间中发送信息
     case 22: {
-        std::string data = message["data"].get<std::string>();
-        json info = json::parse(data);
+        json info = message["data"];
         //TODO check info["id"]==p->room().id();
         p->room()->deliver(message.dump());
         break;

@@ -57,32 +57,28 @@ namespace Client
             {
             case 1:  // 注册
             {
-                var data = (string)jsonnode!["data"]!;
-                Login msg = JsonSerializer.Deserialize<Login>(data, options);
+                Login msg = JsonSerializer.Deserialize<Login>(jsonnode!["data"]!, options);
                 DB.Me = new User(msg.id, msg.name); // 将用户数据（id和name）放入数据库
                 Login?.Invoke(null, msg);
                 break;
             }
             case 10: // 设置个人信息
             {
-                var data = (string)jsonnode!["data"]!;
-                UserInfo msg = JsonSerializer.Deserialize<UserInfo>(data, options);
+                UserInfo msg = JsonSerializer.Deserialize<UserInfo>(jsonnode!["data"]!, options);
                 DB.Me.SetName(msg.name); // 将用户数据存入数据库
                 Userinfo?.Invoke(null, msg);
                 break;
             }
             case 20: // 用户创建房间，服务器分配 room_id
             {
-                var data = (string)jsonnode!["data"]!;
-                RoomCreate msg = JsonSerializer.Deserialize<RoomCreate>(data, options);
+                RoomCreate msg = JsonSerializer.Deserialize<RoomCreate>(jsonnode!["data"]!, options);
                 DB.Room = new(msg.id); // 创建房间
                 Roomcreate?.Invoke(null, msg);
                 break;
             }
             case 21: // 用户尝试进入房间
             {
-                var data = (string)jsonnode!["data"]!;
-                var msg = JsonSerializer.Deserialize<JoinRoom>(data, options);
+                var msg = JsonSerializer.Deserialize<JoinRoom>(jsonnode!["data"]!, options);
                 if (msg.ec != 0)
                 {
                     //Todo，处理异常
@@ -96,9 +92,8 @@ namespace Client
             }
             case 22: // 在房间中发送消息
             {
-                string? data = (string)jsonnode!["data"]!;
-                RoomMessage msg = JsonSerializer.Deserialize<RoomMessage>(data, options);// 取出消息数据
-                int sender_id = msg.id;
+                var msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
+                int sender_id = msg.sender;
                 string message = msg.message;
 
                 FormChatRoom.add_text($"{sender_id} : {message}");
