@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Threading;
 
 using Info;
 using System.Windows.Interop;
+using System.Windows.Forms;
 
 namespace Client
 {
@@ -84,20 +85,21 @@ namespace Client
                     var msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
                     DB.Room.Join(msg.num, new User(msg.info));
                     Otherjoinroom?.Invoke(null, msg);
+                    FormChatRoom.form.Add_text($"{msg.info.name} 进入了房间\n");
                 }
                 else
                 {
                     var msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
                     Myjoinroom?.Invoke(null, msg);
+                    FormChatRoom.form.Add_text("我进入了房间\n");
                 }
                 break;
             }
             case 22: // 在房间中发送消息
             {
-                var msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
+                RoomMessage msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
                 int sender_id = msg.sender;
                 string message = msg.message;
-
                 FormChatRoom.form.Add_text($"{sender_id} : {message}");
                 break;
             }
