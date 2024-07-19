@@ -33,7 +33,7 @@
             button_exit = new Button();
             label_ID = new Label();
             label_name = new Label();
-            textBox_id = new TextBox();
+            textBox_roomid = new TextBox();
             SuspendLayout();
             // 
             // button_CreateRoom
@@ -87,14 +87,14 @@
             label_name.TabIndex = 4;
             label_name.Text = "Name";
             // 
-            // textBox_id
+            // textBox_roomid
             // 
-            textBox_id.Location = new Point(325, 149);
-            textBox_id.Margin = new Padding(0, 3, 0, 3);
-            textBox_id.Name = "textBox_id";
-            textBox_id.PlaceholderText = "请输入房间号";
-            textBox_id.Size = new Size(111, 23);
-            textBox_id.TabIndex = 5;
+            textBox_roomid.Location = new Point(71, 149);
+            textBox_roomid.Margin = new Padding(0, 3, 0, 3);
+            textBox_roomid.Name = "textBox_roomid";
+            textBox_roomid.PlaceholderText = "请输入房间号";
+            textBox_roomid.Size = new Size(79, 23);
+            textBox_roomid.TabIndex = 5;
             // 
             // FormHome
             // 
@@ -102,7 +102,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
             ControlBox = false;
-            Controls.Add(textBox_id);
+            Controls.Add(textBox_roomid);
             Controls.Add(label_name);
             Controls.Add(label_ID);
             Controls.Add(button_exit);
@@ -121,6 +121,6 @@
         private Button button_exit;
         private Label label_ID;
         private Label label_name;
-        private TextBox textBox_id;
+        private TextBox textBox_roomid;
     }
 }

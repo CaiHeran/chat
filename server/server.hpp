@@ -270,25 +270,27 @@ public:
         for (const auto& [_, p] : parts)
             p->deliver(msg);
     }
-    void deliver(int type, const std::string& msg)                   // 将type和msg合并后发送消息
+    template<class T>
+    void deliver(int type, T&& data)                   // 将type和data合并后发送消息
     {
         std::string message = json{
             {"type", type},
-            {"data", msg}
+            {"data", std::forward<T>(data)}
         }.dump();
         deliver(message);
     }
-    void deliver(const std::string& msg, const int except_id)            // 发送信息防止意外
+    void deliver(const std::string& msg, const int except_id)
     {
         for (const auto& [_, p] : parts)
             if (p->id() != except_id)
                 p->deliver(msg);
     }
-    void deliver(int type, const std::string& msg, const int except_id)  // 合并type和msg后发送信息，并防止意外
+    template<class T>
+    void deliver(int type, T&& data, const int except_id)
     {
         std::string message = json{
             {"type", type},
-            {"data", msg}
+            {"data", std::forward<T>(data)}
         }.dump();
         deliver(message, except_id);
     }
@@ -298,14 +300,15 @@ public:
         part_cnt++;
         parts.emplace(part_cnt, p);                   // 将用户加入
         json roominfo = get_roominfo();
-        roominfo.emplace("num", part_cnt);
-        p->deliver(21, roominfo.dump());
+        roominfo.emplace("ec", 0);
+        roominfo.emplace("num", part_cnt);              // "your num"
+        p->deliver(21, roominfo);
 
         json info {
             {"num", part_cnt},
             {"info", json(p->info())}
         };
-        deliver(21, info.dump(), p->id());                          // 向服务器发送用户信息
+        deliver(21, info, p->id());                          // 向服务器发送用户信息
         return part_cnt;
     }
     json get_roominfo()                                             // 房间信息转化为消息并返回
@@ -313,19 +316,16 @@ public:
         json::array_t list;
         for (auto [num, part]: parts)                  // 遍历参与者
         {
-            auto &info = part->info();
             json t {
                 {"num", num},
-                {"id", info.id},
-                {"name", info.name}
+                {"info", json(part->info())}
             };
             list.emplace_back(std::move(t));           // 将参与者信息加入list
         }
         json j {
             {"id", room_id},
-            {"host", host_num},
+            {"list", std::move(list)},
         };
-        j.emplace("list", std::move(list));            // 返回房间信息
         return j;
     }
 };

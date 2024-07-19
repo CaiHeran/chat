@@ -49,7 +49,7 @@ namespace Client
 
         private void button_JoinRoom_Click(object sender, EventArgs e)
         {
-            int room_id = int.Parse(textBox_id.Text);
+            int room_id = int.Parse(textBox_roomid.Text);
             fj = (_, info) =>
             {
                 Joinroom_Callback();
@@ -58,7 +58,7 @@ namespace Client
                 FormChatRoom.formchatroom!.Show();
             };
             Process.Tryjoinroom += fj;
-            Functions.JoinRoom(DB.Me.Id);
+            Functions.JoinRoom(int.Parse(textBox_roomid.Text));
         }
         private void Joinroom_Callback()
         {
