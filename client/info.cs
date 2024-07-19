@@ -30,19 +30,30 @@
         int id // room id
     ) : Info;
 
-    // 21 进入房间成功/失败
-    public record JoinRoom
-    (
-        int id,
-        int ec,
-        int num,
-        Dictionary<int, UserBriefInfo> parts
-    ) : Info;
-
     public record UserBriefInfo
     (
         int id,
         string name
+    ) : Info;
+
+    // 21 进入房间成功/失败
+    public record MyJoinRoom
+    (
+        int id,
+        int ec,
+        int num,
+        List<Entry> list
+    ) : Info;
+    public record Entry     // to rename
+    (
+        int num,
+        UserBriefInfo info
+    );
+
+    public record OtherJoinRoom
+    (
+        int num,
+        UserBriefInfo info
     ) : Info;
 
     public record Message

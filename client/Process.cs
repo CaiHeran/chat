@@ -19,7 +19,8 @@ namespace Client
         static public event EventHandler<Login>? Login;
         static public event EventHandler<UserInfo>? Userinfo;
         static public event EventHandler<RoomCreate>? Roomcreate;
-        static public event EventHandler<TryJoinRoom>? Tryjoinroom;
+        static public event EventHandler<MyJoinRoom>? Myjoinroom;
+        static public event EventHandler<OtherJoinRoom>? Otherjoinroom;
 
         static private AsyncQueue<string> ProcessQueue = new();
 
@@ -78,15 +79,16 @@ namespace Client
             }
             case 21: // 用户尝试进入房间
             {
-                var msg = JsonSerializer.Deserialize<JoinRoom>(jsonnode!["data"]!, options);
-                if (msg.ec != 0)
+                if (DB.Room is not null) // 别人进入房间
                 {
-                    //Todo，处理异常
+                    var msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
+                    DB.Room.Join(msg.num, new User(msg.info));
+                    Otherjoinroom?.Invoke(null, msg);
                 }
                 else
                 {
-                    DB.Room = new(msg.id, msg.num, msg.parts);//无异常，加入房间
-                    //Todo
+                    var msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
+                    Myjoinroom?.Invoke(null, msg);
                 }
                 break;
             }
@@ -96,7 +98,7 @@ namespace Client
                 int sender_id = msg.sender;
                 string message = msg.message;
 
-                FormChatRoom.add_text($"{sender_id} : {message}");
+                FormChatRoom.form.Add_text($"{sender_id} : {message}");
                 break;
             }
             }

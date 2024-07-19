@@ -122,7 +122,7 @@
         private ListView listView_members;
         private Label label_members;
         private Button button_send;
-        private static RichTextBox richTextBox_view;
+        private RichTextBox richTextBox_view;
         private Button button_exit;
         private RichTextBox richTextBox_input;
     }

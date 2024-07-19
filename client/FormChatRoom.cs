@@ -13,12 +13,12 @@ namespace Client
 {
     public partial class FormChatRoom : Form
     {
-        public static FormChatRoom? formchatroom { get; set; }
+        public static FormChatRoom? form { get; set; }
 
         public FormChatRoom()
         {
             InitializeComponent();
-            formchatroom = this;
+            form = this;
         }
         public void FormChatRoom_Load(object sender, EventArgs e)
         {
@@ -50,7 +50,7 @@ namespace Client
         // richTextBoxs
         // richTextBox_view
         // Todo：怎样实现文本实时更新
-        public static void add_text(string text)
+        public void Add_text(string text)
         {
             richTextBox_view.AppendText(text + "\n");
             return;

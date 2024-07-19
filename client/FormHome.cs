@@ -27,7 +27,7 @@ namespace Client
         }
 
         EventHandler<RoomCreate>? fc;
-        EventHandler<TryJoinRoom>? fj;
+        EventHandler<MyJoinRoom>? fj;
 
         private void button_CreateRoom_Click(object sender, EventArgs e)
         {
@@ -36,8 +36,7 @@ namespace Client
                 Createroom_Callback();
                 this.Hide();
                 new FormChatRoom();
-                FormChatRoom.formchatroom!.Show();
-                //
+                FormChatRoom.form!.Show();
             };
             Process.Roomcreate += fc;
             Functions.CreateRoom();
@@ -50,19 +49,28 @@ namespace Client
         private void button_JoinRoom_Click(object sender, EventArgs e)
         {
             int room_id = int.Parse(textBox_roomid.Text);
-            fj = (_, info) =>
+            fj = (_, msg) =>
             {
-                Joinroom_Callback();
-                this.Hide();
-                new FormChatRoom();
-                FormChatRoom.formchatroom!.Show();
+                if (msg.ec != 0)
+                {
+                    MessageBox.Show("房间号无效，请重新输入", "游戏标题");
+                    return;
+                }
+                else
+                {
+                    Joinroom_Callback();
+                    DB.Room = new(msg.id, msg.num, msg.list); //无异常，加入房间
+                    this.Hide();
+                    new FormChatRoom();
+                    FormChatRoom.form!.Show();
+                }
             };
-            Process.Tryjoinroom += fj;
+            Process.Myjoinroom += fj;
             Functions.JoinRoom(int.Parse(textBox_roomid.Text));
         }
         private void Joinroom_Callback()
         {
-            Process.Tryjoinroom -= fj;
+            Process.Myjoinroom -= fj;
         }
 
         private void button_exit_Click(object sender, EventArgs e)

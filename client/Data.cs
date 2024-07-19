@@ -40,7 +40,7 @@ namespace Client
         // 成员列表: num -> user
         public Dictionary<int, User> Parts { get; private set; } = []; // 1号为房主
 
-        // 创建房间时构造
+        // 作为房主创建房间时构造
         public Room(int id)
         {
             Id = id;
@@ -48,7 +48,7 @@ namespace Client
             Parts.Add(1, DB.Me);
         }
         // 加入房间时构造
-        public Room(int id, int mynum, Dictionary<int, Info.UserBriefInfo> parts)
+        public Room(int id, int mynum, List<Info.Entry> parts)
         {
             Id = id;
             Num = mynum;
