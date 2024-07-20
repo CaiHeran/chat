@@ -22,6 +22,7 @@ namespace Client
         static public event EventHandler<RoomCreate>? Roomcreate;
         static public event EventHandler<MyJoinRoom>? Myjoinroom;
         static public event EventHandler<OtherJoinRoom>? Otherjoinroom;
+        static public event EventHandler<RoomMessage>? Roommessage;
 
         static private AsyncQueue<string> ProcessQueue = new();
 
@@ -78,29 +79,25 @@ namespace Client
                 Roomcreate?.Invoke(null, msg);
                 break;
             }
-            case 21: // 用户尝试进入房间
+            case 21: // 进入房间
             {
                 if (DB.Room is not null) // 别人进入房间
                 {
-                    OtherJoinRoom? msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
+                    var msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
                     DB.Room.Join(msg.num, new User(msg.info));
                     Otherjoinroom?.Invoke(null, msg);
-                    FormChatRoom.formchatroom.Add_text($"{msg.info.name} 进入了房间\n");
                 }
-                else
+                else    // 我进入房间
                 {
-                    MyJoinRoom? msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
+                    var msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
                     Myjoinroom?.Invoke(null, msg);
-                    FormChatRoom.formchatroom.Add_text("我进入了房间\n");
                 }
                 break;
             }
             case 22: // 在房间中发送消息
             {
-                RoomMessage msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
-                int sender_id = msg.sender;
-                string message = msg.message;
-                FormChatRoom.formchatroom.Add_text($"{sender_id} : {message}");
+                var msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
+                Roommessage?.Invoke(null, msg);
                 break;
             }
             }

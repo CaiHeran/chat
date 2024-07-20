@@ -109,26 +109,10 @@ public:
         deliver(message);
     }
 
-    const Info& info() const {return info_;}                           // 获取用户信息
-    int id() const noexcept {return info_.id;}                         // 获取用户id
-    int get_num() const noexcept{return num;}                          // 获取？？？
-    Room_ptr room() {
-
-
-
-
-        //-------------------------------------------------------------------------------------------
-        if (room_ptr == NULL) {
-            printf("----------Warning room_ptr is NULL!-----------------");
-            getchar();
-        }
-        //---------------------------------------------------------------------------------------------
-        
-        
-        
-        
-        return room_ptr;
-    }                               // 获取所在房间
+    const Info& info() const { return info_; }                           // 获取用户信息
+    int id() const noexcept { return info_.id; }                         // 获取用户id
+    int get_num() const noexcept{ return num; }                          // 获取？？？
+    Room_ptr room() { return room_ptr; }                               // 获取所在房间
     Room_ptr create_room()                                             // 创建房间并返回
     {
         if (room_ptr) std::terminate();
@@ -353,6 +337,7 @@ bool User::join_room(int room_id)//见上面
     auto room = global_room.get_room(room_id);
     if (!room)
         return false;
+    room_ptr = room;
     room->join(shared_from_this());
     return true;
 }
