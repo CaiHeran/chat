@@ -112,7 +112,23 @@ public:
     const Info& info() const {return info_;}                           // 获取用户信息
     int id() const noexcept {return info_.id;}                         // 获取用户id
     int get_num() const noexcept{return num;}                          // 获取？？？
-    Room_ptr room() { return room_ptr; }                               // 获取所在房间
+    Room_ptr room() {
+
+
+
+
+        //-------------------------------------------------------------------------------------------
+        if (room_ptr == NULL) {
+            printf("----------Warning room_ptr is NULL!-----------------");
+            getchar();
+        }
+        //---------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        return room_ptr;
+    }                               // 获取所在房间
     Room_ptr create_room()                                             // 创建房间并返回
     {
         if (room_ptr) std::terminate();
@@ -193,6 +209,7 @@ private:
         static std::atomic_int id{10};
         return ++id;
     }
+
 
 private:
     friend class Room;  // 设置order——？？？（吴桐的疑惑）

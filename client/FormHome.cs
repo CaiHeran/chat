@@ -35,8 +35,8 @@ namespace Client
             {
                 Createroom_Callback();
                 this.Hide();
-                new FormChatRoom();
-                FormChatRoom.form!.Show();
+                FormChatRoom.formchatroom = new FormChatRoom();
+                FormChatRoom.formchatroom!.Show();
             };
             Process.Roomcreate += fc;
             Functions.CreateRoom();
@@ -61,8 +61,8 @@ namespace Client
                     Joinroom_Callback();
                     DB.Room = new(msg.id, msg.num, msg.list); //无异常，加入房间
                     this.Hide();
-                    new FormChatRoom();
-                    FormChatRoom.form!.Show();
+                    FormChatRoom.formchatroom = new FormChatRoom();
+                    FormChatRoom.formchatroom!.Show();
                 }
             };
             Process.Myjoinroom += fj;

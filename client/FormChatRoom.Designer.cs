@@ -67,6 +67,7 @@
             richTextBox_view.Location = new Point(412, 68);
             richTextBox_view.Margin = new Padding(8, 7, 8, 7);
             richTextBox_view.Name = "richTextBox_view";
+            richTextBox_view.ReadOnly = true;
             richTextBox_view.Size = new Size(783, 513);
             richTextBox_view.TabIndex = 4;
             richTextBox_view.Text = "";
@@ -107,6 +108,7 @@
             dataGridView_list.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridView_list.Location = new Point(22, 157);
             dataGridView_list.Name = "dataGridView_list";
+            dataGridView_list.ReadOnly = true;
             dataGridView_list.RowHeadersWidth = 62;
             dataGridView_list.Size = new Size(360, 540);
             dataGridView_list.TabIndex = 9;
@@ -140,6 +142,6 @@
         private Button button_exit;
         private RichTextBox richTextBox_input;
         private Label label_roomid;
-        private static DataGridView dataGridView_list;
+        private DataGridView dataGridView_list;
     }
 }

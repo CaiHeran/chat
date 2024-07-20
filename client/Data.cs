@@ -38,7 +38,7 @@ namespace Client
         public int Id { get; private set; }
         public int Num { get; private set; }
         // 成员列表: num -> user
-        public Dictionary<int, User> Parts { get; private set; } = []; // 1号为房主
+        public Dictionary<int, User> Parts { get; private set; } = []; // int索引为用户在房间的num，1号为房主
 
         // 作为房主创建房间时构造
         public Room(int id)

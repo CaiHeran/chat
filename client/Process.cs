@@ -82,16 +82,16 @@ namespace Client
             {
                 if (DB.Room is not null) // 别人进入房间
                 {
-                    var msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
+                    OtherJoinRoom? msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
                     DB.Room.Join(msg.num, new User(msg.info));
                     Otherjoinroom?.Invoke(null, msg);
-                    FormChatRoom.form.Add_text($"{msg.info.name} 进入了房间\n");
+                    FormChatRoom.formchatroom.Add_text($"{msg.info.name} 进入了房间\n");
                 }
                 else
                 {
-                    var msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
+                    MyJoinRoom? msg = JsonSerializer.Deserialize<MyJoinRoom>(jsonnode!["data"]!, options);
                     Myjoinroom?.Invoke(null, msg);
-                    FormChatRoom.form.Add_text("我进入了房间\n");
+                    FormChatRoom.formchatroom.Add_text("我进入了房间\n");
                 }
                 break;
             }
@@ -100,7 +100,7 @@ namespace Client
                 RoomMessage msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
                 int sender_id = msg.sender;
                 string message = msg.message;
-                FormChatRoom.form.Add_text($"{sender_id} : {message}");
+                FormChatRoom.formchatroom.Add_text($"{sender_id} : {message}");
                 break;
             }
             }
