@@ -38,7 +38,7 @@ namespace Client
 
         public static void JoinRoom(int id)
         {
-            Server.Send(21, $$"""{"id":{{id}}}""");
+            Server.Send(21, $$"""{"room":{{id}}}""");
         }
 
         public static void SendMessage(string message)

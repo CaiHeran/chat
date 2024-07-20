@@ -74,8 +74,8 @@ namespace Client
             }
             case 20: // 用户创建房间，服务器分配 room_id
             {
-                RoomCreate msg = JsonSerializer.Deserialize<RoomCreate>(jsonnode!["data"]!, options);
-                DB.Room = new(msg.id); // 创建房间
+                var msg = JsonSerializer.Deserialize<RoomCreate>(jsonnode!["data"]!, options);
+                DB.Room = new(msg.room); // 创建房间
                 Roomcreate?.Invoke(null, msg);
                 break;
             }
@@ -84,7 +84,7 @@ namespace Client
                 if (DB.Room is not null) // 别人进入房间
                 {
                     var msg = JsonSerializer.Deserialize<OtherJoinRoom>(jsonnode!["data"]!, options);
-                    DB.Room.Join(msg.num, new User(msg.info));
+                    DB.Room.Join(new User(msg.info));
                     Otherjoinroom?.Invoke(null, msg);
                 }
                 else    // 我进入房间

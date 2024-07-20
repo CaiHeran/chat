@@ -59,7 +59,7 @@ namespace Client
                 else
                 {
                     Joinroom_Callback();
-                    DB.Room = new(msg.id, msg.num, msg.list); //无异常，加入房间
+                    DB.Room = new(msg.room, msg.list); //无异常，加入房间
                     this.Hide();
                     FormChatRoom.formchatroom = new FormChatRoom();
                     FormChatRoom.formchatroom!.Show();

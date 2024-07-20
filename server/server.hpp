@@ -111,7 +111,6 @@ public:
 
     const Info& info() const { return info_; }                           // 获取用户信息
     int id() const noexcept { return info_.id; }                         // 获取用户id
-    int get_num() const noexcept{ return num; }                          // 获取？？？
     Room_ptr room() { return room_ptr; }                               // 获取所在房间
     Room_ptr create_room()                                             // 创建房间并返回
     {
@@ -196,8 +195,6 @@ private:
 
 
 private:
-    friend class Room;  // 设置order——？？？（吴桐的疑惑）
-    int num = -1;       // -1代表未进入房间——？？？（吴桐的疑惑）
     Room_ptr room_ptr;  // 房间地址
     Info info_;         // 用户信息结构
 
@@ -254,13 +251,11 @@ class Room                                                           // 房间�
 private:
     static constexpr int host_num = 1;                               // 房主序号
     const int room_id;                                               // 本房间房间号
-    int part_cnt = 0;                                                // 加入者数目
-    std::map<int, User_ptr> parts;                                   // 加入者信息集合（映射）
+    std::map<int, User_ptr> parts;   // id -> user_ptr
 
 public:
     Room(int room_id, User_ptr host)                                 // 新房间初始化
       : room_id(room_id),
-        part_cnt(1),
         parts{{host_num, host}}
         {}
 
@@ -296,35 +291,31 @@ public:
         deliver(message, except_id);
     }
 
-    int join(User_ptr p)                                            // 加入房间，参数为加入者地址
+    void join(User_ptr p)                                            // 加入房间，参数为加入者地址
     {
-        part_cnt++;
-        parts.emplace(part_cnt, p);                   // 将用户加入
+        parts.emplace(p->id(), p);                   // 将用户加入
         json roominfo = get_roominfo();
         roominfo.emplace("ec", 0);
-        roominfo.emplace("num", part_cnt);              // "your num"
         p->deliver(21, roominfo);
 
         json info {
-            {"num", part_cnt},
+            {"room", room_id},
             {"info", json(p->info())}
         };
         deliver(21, info, p->id());                          // 向服务器发送用户信息
-        return part_cnt;
     }
     json get_roominfo()                                             // 房间信息转化为消息并返回
     {
         json::array_t list;
-        for (auto [num, part]: parts)                  // 遍历参与者
+        for (auto [_, part]: parts)                  // 遍历参与者
         {
             json t {
-                {"num", num},
-                {"info", json(part->info())}
+                json(part->info())
             };
             list.emplace_back(std::move(t));           // 将参与者信息加入list
         }
         json j {
-            {"id", room_id},
+            {"room", room_id},
             {"list", std::move(list)},
         };
         return j;
@@ -366,8 +357,8 @@ void process(User_ptr p, json message)//见上面
         Expects(!p->room());
         p->create_room();
         json info {
-            {"type", 20},//bug fixed
-            {"data", {{"id", p->room()->id()}}}
+            {"type", 20},
+            {"data", {{"room", p->room()->id()}}}
         };
         p->deliver(info.dump());
         break;
@@ -375,7 +366,7 @@ void process(User_ptr p, json message)//见上面
     // 加入房间
     case 21: {
         json info = message["data"];
-        bool ec = ! p->join_room(info["id"].get<int>());
+        bool ec = ! p->join_room(info["room"].get<int>());
         if (ec) {
             p->deliver(21, json{{"ec", (int)ec}});
         }

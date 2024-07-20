@@ -7,7 +7,7 @@
     // 01 用户成功连接服务器并注册后，服务器分配 user_id
     public record Login
     (
-        int id,
+        int id, //user id
         string name
     ) : Info;
 
@@ -20,46 +20,40 @@
     // 20 用户创建房间，服务器分配 room_id
     public record RoomCreate
     (
-        int id // room id
+        int room // room id
     ) : Info;
 
     // 21 用户尝试进入房间
     public record TryJoinRoom
     (
         int ec,
-        int id // room id
+        int room // room id
     ) : Info;
 
     public record UserBriefInfo
     (
-        int id,
+        int id, // user id
         string name
     ) : Info;
 
     // 21 进入房间成功/失败
     public record MyJoinRoom
     (
-        int id,
+        int room,
         int ec,
-        int num,
-        List<Entry> list
+        List<UserBriefInfo> list
     ) : Info;
-    public record Entry     // to rename
-    (
-        int num,
-        UserBriefInfo info
-    );
 
     public record OtherJoinRoom
     (
-        int num,
+        int room, // room id
         UserBriefInfo info
     ) : Info;
 
     public record Message
     (
         DateTime time,
-        int sender,
+        int id,
         string message
     );
 
@@ -67,10 +61,10 @@
     public record RoomMessage
     (
         DateTime time,
-        int sender,
         int room,
+        int id, // user id
         string message
-    ) : Message(time, sender, message);
+    ) : Message(time, id, message);
 
     /*
     record ChatRoomStart : Info

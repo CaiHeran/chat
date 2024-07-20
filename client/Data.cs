@@ -36,36 +36,33 @@ namespace Client
     internal class Room
     {
         public int Id { get; private set; }
-        public int Num { get; private set; }
-        // 成员列表: num -> user
-        public Dictionary<int, User> Parts { get; private set; } = []; // int索引为用户在房间的num，1号为房主
+        // 成员列表: id -> user
+        public Dictionary<int, User> Parts { get; private set; } = [];
 
         // 作为房主创建房间时构造
-        public Room(int id)
+        public Room(int roomid)
         {
-            Id = id;
-            Num = 0;
-            Parts.Add(1, DB.Me);
+            Id = roomid;
+            Parts.Add(DB.Me.Id, DB.Me);
         }
         // 加入房间时构造
-        public Room(int id, int mynum, List<Info.Entry> parts)
+        public Room(int id, List<UserBriefInfo> parts)
         {
             Id = id;
-            Num = mynum;
-            foreach (var (num, info) in parts)
+            foreach (var info in parts)
             {
-                Parts.Add(num, new User(info));
+                Parts.Add(info.id, new User(info));
             }
         }
 
-        public void Join(int num, User user)
+        public void Join(User user)
         {
-            Parts.Add(num, user);
+            Parts.Add(user.Id, user);
         }
 
-        public void Leave(int num)
+        public void Leave(int id)
         {
-            Parts.Remove(num);
+            Parts.Remove(id);
         }
     }
 
