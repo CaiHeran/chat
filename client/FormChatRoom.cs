@@ -35,7 +35,7 @@ namespace Client
             Process.Roommessage += (_, msg) => {
                 int id = msg.id;
                 string message = msg.message;
-                FormChatRoom.formchatroom.Add_text($"{id} : {message}");
+                FormChatRoom.formchatroom.Add_text($"{DB.Room.Parts[id]}: {message}");
             };
             Grid_Load();
             label_roomid.Text = $"房间号：{DB.Room.Id}";

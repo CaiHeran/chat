@@ -46,8 +46,8 @@ namespace Client
             // check
             var msg = new RoomMessage (
                 DateTime.Now,
-                DB.Me!.Id,
                 DB.Room!.Id,
+                DB.Me!.Id,
                 message
             );
             Server.Send(22, JsonSerializer.Serialize(msg, options));
