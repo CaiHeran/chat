@@ -52,5 +52,10 @@ namespace Client
             );
             Server.Send(22, JsonSerializer.Serialize(msg, options));
         }
+        
+        public static void LeaveRoom(int room_id)
+        {
+            Server.Send(23, $$"""{"room":{{room_id}}}""");
+        }
     }
 }

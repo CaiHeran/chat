@@ -36,20 +36,22 @@ namespace Client
             };
             Process.Roommessage += (_, msg) =>
             {
-                int id = msg.id;
-                string message = msg.message;
-                FormChatRoom.formchatroom.Add_text($"{DB.Room.Parts[id].Name}: {message}");
+                Add_text($"{DB.Room.Parts[msg.id].Name}: {msg.message}");
+            };
+            Process.Leaveroom += (_, msg) =>
+            {
+                Grid_DelData(msg.id);
             };
             Grid_Load();
             label_roomid.Text = $"房间号：{DB.Room.Id}";
 
-
+            new FormUserData();
             FormUserData.formuserdata.MdiParent = this;
         }
         //
         // dataGrid_View
         // dataGrid_View_list
-        internal void Grid_Init()
+        private void Grid_Init()
         {
             const int Listnum = 2;
             dataGridView_list.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;        // 自动调整行高
@@ -65,6 +67,13 @@ namespace Client
             dataGridView_list.Columns[1].HeaderText = "昵称";
             dataGridView_list.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         }
+        private void Grid_Load()
+        {
+            Grid_Init();
+            foreach ((int num, User userinfo) in DB.Room.Parts)
+                Grid_AddData(num, userinfo);
+        }
+
         internal void Grid_AddData(UserBriefInfo info)
         {
             Grid_AddData(info.id, new User(info));
@@ -74,22 +83,25 @@ namespace Client
             // todo:首先判断数据是否异常
             int cnt = dataGridView_list.Rows.Count;                         // 得到总行数 
             dataGridView_list.Rows.Insert(cnt, 1);                          // 准备向下一行插入一行数据
-            dataGridView_list.Rows[cnt].Cells[0].Value = $"{id}";           //
+            dataGridView_list.Rows[cnt].Cells[0].Value = id;                //
             dataGridView_list.Rows[cnt].Cells[1].Value = $"{userinfo.Name}";//
             dataGridView_list.ClearSelection();                             // 去除选择
         }
-        internal void Grid_Load()
+        internal void Grid_DelData(int id)
         {
-            Grid_Init();
-            foreach ((int num, User userinfo) in DB.Room.Parts)
-                Grid_AddData(num, userinfo);
+            for (int i = 0; i < dataGridView_list.Rows.Count; i++)
+                if ((int)dataGridView_list.Rows[i].Cells[0].Value == id)
+                {
+                    dataGridView_list.Rows.RemoveAt(i);
+                    break;
+                }
         }
         //
         // richTextBoxs
         // richTextBox_view
         internal void Add_text(string text)
         {
-            richTextBox_view.AppendText(text + "\n");
+             richTextBox_view.AppendText(text + "\n");
             return;
         }
         //
@@ -125,10 +137,10 @@ namespace Client
             int eColumnIndex = e.ColumnIndex, eRowIndex = e.RowIndex;
             if (eColumnIndex == 1 && eRowIndex >= 0)
             {
-                int target = int.Parse(dataGridView_list[0,eRowIndex].Value.ToString());// 获取id
+                int target = (int)dataGridView_list[0, eRowIndex].Value;        // 获取id
                 int id = target;
                 string name = DB.Room.Parts[target].Name;
-                string IP = DB.Room.Parts[target].IP;
+                string IP = "IP";
                 if (FormUserData.formuserdata.Visible == true)
                 {
                     if (FormUserData.formuserdata.RowIndex != eRowIndex)

@@ -26,12 +26,22 @@ void process(User_ptr p, json info);                               // 处理由�
 class GlobalRoom                                                   // 服务器全局信息
 {
 private:
-    std::set<User_ptr> users;                                      // 玩家集合
+    std::set<User_ptr> users;                                      // 用户集合
     std::map<int, Room_ptr> rooms;                                 // 房间集合（映射）
 
 public:
-    void join(User_ptr user){users.insert(user);}                  // 加入房间
-    void leave(User_ptr user){users.erase(user);}                  // 退出房间
+    void join(User_ptr user)
+    {
+        users.insert(user);
+    }
+
+    // 客户端离线
+    void leave(User_ptr user)
+    {
+        println("[{}] departed.", user->id());
+        users.erase(user);
+    }
+
     Room_ptr create_room(User_ptr host)                            // 创建房间
     {
         int room_id = _new_id();                                   // 获取房间id
@@ -42,10 +52,12 @@ public:
 
     Room_ptr get_room(int room_id)                                 // 由id获取房间指针
     {
-        try {
-            return rooms.at(room_id);                              // 查询映射
-        }
-        catch (std::out_of_range) {return nullptr;}                // 房间位置无效
+        return rooms.contains(room_id)? rooms[room_id] : nullptr;
+    }
+
+    void delete_room(int id)
+    {
+        rooms.erase(id);
     }
 private:
     static int _new_id() noexcept                                  // 生成新id
@@ -75,7 +87,7 @@ public:
         timer_(socket_.get_executor())
     {
         info_.id = _new_id();                                      // 为新用户获取新id
-        println("{} connected, id: {}",                            // 在服务器发送通知
+        println("{} connected, id: [{}]",                            // 在服务器发送通知
             socket_.lowest_layer().remote_endpoint().address().to_string(), info_.id);
         timer_.expires_at(std::chrono::steady_clock::time_point::max());
     }
@@ -97,7 +109,7 @@ public:
     {
         write_msgs.emplace_back(std::forward<T>(msg));
         timer_.cancel_one();                                           // ？？？
-        println("Deliver to {}: {}", info_.id, msg);
+        println("Deliver to [{}]: {}", info_.id, msg);
     }
     template<class T>
     void deliver(int type, T&& data)                    // 输出被递送的消息（上层）——（吴桐：将msg改为data）
@@ -119,6 +131,8 @@ public:
         return room_ptr;
     }
     bool join_room(int room_id);                                       // 加入房间并返回是否加入成功
+
+    void leave_room(int room_id);
 
 private:
     awaitable<void> do_shake_hands()                                   // ？？？
@@ -179,13 +193,7 @@ private:
         stop();
     }
 
-    void stop()                                                       // 用户断开连接并输出信息
-    {
-        println("[{}] disconnected", id());
-        global_room.leave(shared_from_this());
-        socket_.shutdown();
-        timer_.cancel();
-    }
+    void stop();                                                      // 用户异常断开连接
 
     static int _new_id()                                              // 生成新用户id
     {
@@ -256,7 +264,7 @@ private:
 public:
     Room(int room_id, User_ptr host)                                 // 新房间初始化
       : room_id(room_id),
-        parts{{host_num, host}}
+        parts{{host->id(), host}}
         {}
 
     int id() const { return room_id; }                               // 获取房间id
@@ -304,7 +312,23 @@ public:
         };
         deliver(21, info, p->id());                          // 向服务器发送用户信息
     }
-    json get_roominfo()                                             // 房间信息转化为消息并返回
+
+    void leave(int id)
+    {
+        println("[{}] left room {}", id, room_id);
+        parts.erase(id);
+        if (parts.empty()) {
+            global_room.delete_room(room_id);
+            return;
+        }
+
+        deliver(23, json{
+            {"room", room_id},
+            {"id", id}
+        });
+    }
+
+    json get_roominfo() const                                            // 房间信息转化为消息并返回
     {
         json::array_t list;
         for (auto [_, part]: parts)                  // 遍历参与者
@@ -331,6 +355,22 @@ bool User::join_room(int room_id)//见上面
     room_ptr = room;
     room->join(shared_from_this());
     return true;
+}
+
+void User::leave_room(int room_id)
+{
+    Expects(room_id == room_ptr->id());
+    room_ptr->leave(id());
+}
+
+void User::stop()
+{
+    println("[{}] disconnected", id());
+    if (room_ptr)
+        room_ptr->leave(id());
+    global_room.leave(shared_from_this());
+    socket_.shutdown();
+    timer_.cancel();
 }
 
 void process(User_ptr p, json message)//见上面
@@ -377,6 +417,12 @@ void process(User_ptr p, json message)//见上面
         json info = message["data"];
         //TODO check info["id"]==p->room().id();
         p->room()->deliver(message.dump());
+        break;
+    }
+    
+    case 23: {
+        json info = message["data"];
+        p->leave_room(info["room"].get<int>());
         break;
     }
 

@@ -1,4 +1,6 @@
-﻿namespace Info
+﻿using System.Net;
+
+namespace Info
 {
     public record Info
     (
@@ -15,6 +17,13 @@
     public record UserInfo
     (
         string name
+    ) : Info;
+
+    public record UserFullInfo
+    (
+        int id,
+        IPAddress ipe,
+        UserInfo info
     ) : Info;
 
     // 20 用户创建房间，服务器分配 room_id
@@ -62,9 +71,16 @@
     (
         DateTime time,
         int room,
-        int id, // user id
+        int id,
         string message
     ) : Message(time, id, message);
+
+    // 23 房间成员退出房间
+    public record LeaveRoom
+    (
+        int room,
+        int id
+    ) : Info;
 
     /*
     record ChatRoomStart : Info

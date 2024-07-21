@@ -23,6 +23,7 @@ namespace Client
         static public event EventHandler<MyJoinRoom>? Myjoinroom;
         static public event EventHandler<OtherJoinRoom>? Otherjoinroom;
         static public event EventHandler<RoomMessage>? Roommessage;
+        static public event EventHandler<LeaveRoom>? Leaveroom;
 
         static private AsyncQueue<string> ProcessQueue = new();
 
@@ -98,6 +99,12 @@ namespace Client
             {
                 var msg = JsonSerializer.Deserialize<RoomMessage>(jsonnode!["data"]!, options);// 取出消息数据
                 Roommessage?.Invoke(null, msg);
+                break;
+            }
+            case 23: // 房间成员退出房间
+            {
+                var msg = JsonSerializer.Deserialize<LeaveRoom>(jsonnode!["data"]!, options);// 取出消息数据
+                Leaveroom?.Invoke(null, msg);
                 break;
             }
             }

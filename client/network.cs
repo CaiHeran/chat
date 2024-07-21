@@ -20,24 +20,24 @@ namespace Client
 {
     internal static class Server
     {
-        private static SslStream stream;                                              // ？
+        private static SslStream stream;
         private static AsyncQueue<string> messages = new();                           // 消息队列
         public static bool Connect(string host, int port)                             // 连接服务器，参数为服务器和端口
         {
-            TcpClient client = new TcpClient(host, port);                             // ？
+            TcpClient client = new TcpClient(host, port);
             SslStream sslStream = new SslStream(
                 client.GetStream(),
                 false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate),
                 null
             );
-            try                                                                       // 连接成功
+            try
             {
                 sslStream.AuthenticateAsClient("");                                   // ？
             }
-            catch (Exception e)                                                       // 连接失败
+            catch (Exception e)                                                       // 认证失败
             {
-                client.Close();                                                       // 关闭连接服务器线程
+                client.Close();                                                       // 关闭连接
                 ExceptionDispatchInfo.Capture(e).Throw();
             }
 
@@ -62,25 +62,38 @@ namespace Client
         {
             Send($$"""{"type":{{type}},"data":{{data}}}""");
         }
-        private static async Task Writer()                                            // 输出？？？
+        private static async Task Writer()
         {
-            StreamWriter writer = new(stream);                                        // ？
-            while (true)
+            try {
+                StreamWriter writer = new(stream);
+                while (true)
+                {
+                    string msg = await messages.DequeueAsync();                           // 等待并获取刚处理的信息
+                    await writer.WriteLineAsync(msg);                                     // 输出信息并等待输出完成
+                    await writer.FlushAsync();                                            // 刷新缓冲区
+                }
+            }
+            catch (Exception e)
             {
-                string msg = await messages.DequeueAsync();                           // 等待并获取刚处理的信息
-                await writer.WriteLineAsync(msg);                                     // 输出信息并等待输出完成
-                await writer.FlushAsync();                                                       // 刷新输出区
+                stream.Close();
             }
         }
-        private static async Task Reader()                                            // 读取服务器发来的信息并处理
+        private static async Task Reader()
         {
-            StreamReader sr = new(stream, Encoding.UTF8);
-            while (true)
+            try
             {
-                StringBuilder messageData = new StringBuilder();                      // 读取信息队列
-                string? msg = await sr.ReadLineAsync();                               // 等待信息读取完毕
-                if (msg == null) { break; }                                           // ???（蔡和然的疑问）（吴桐的猜测：用return？）
-                Task.Run(()=>Process.ProcessMessage(msg));                            // 处理信息
+                StreamReader sr = new(stream, Encoding.UTF8);
+                while (true)
+                {
+                    StringBuilder messageData = new StringBuilder();                      // 读取信息队列
+                    string? msg = await sr.ReadLineAsync();                               // 等待信息读取完毕
+                    if (msg == null) { break; }                                           // ???（蔡和然的疑问）（吴桐的猜测：用return？）
+                    Task.Run(() => Process.ProcessMessage(msg));                          // 处理信息
+                }
+            }
+            catch (Exception e)
+            {
+                stream.Close();
             }
         }
         private static bool ValidateServerCertificate(                                // 验证服务器证书
@@ -92,9 +105,9 @@ namespace Client
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
-            string information = $"Server's certificate:\n{certificate}\nAuthenticate?";// 询问信息
+            string information = $"Server's certificate:\n{certificate}\nAuthenticate?";
 
-            var res = MessageBox.Show($"{information}",                                 // 发起询问
+            var res = MessageBox.Show($"{information}",
               "确认",
               MessageBoxButtons.YesNo,
               MessageBoxIcon.Information);
