@@ -19,6 +19,7 @@ namespace Client
     internal partial class FormChatRoom : Form
     {
         internal static FormChatRoom formchatroom { get; set; }
+        bool _is_showing = false;
         //
         // Forms
         // FormChatRoom
@@ -44,9 +45,6 @@ namespace Client
             };
             Grid_Load();
             label_roomid.Text = $"房间号：{DB.Room.Id}";
-
-            new FormUserData();
-            FormUserData.formuserdata.MdiParent = this;
         }
         //
         // dataGrid_View
@@ -73,7 +71,6 @@ namespace Client
             foreach ((int num, User userinfo) in DB.Room.Parts)
                 Grid_AddData(num, userinfo);
         }
-
         internal void Grid_AddData(UserBriefInfo info)
         {
             Grid_AddData(info.id, new User(info));
@@ -119,7 +116,6 @@ namespace Client
             richTextBox_input.Text = "";
             Functions.SendMessage(msg);
         }
-
         private void button_exit_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -133,7 +129,6 @@ namespace Client
         // 鼠标悬停显示信息
         private void dataGridView_list_CellMouseMove(object sender, DataGridViewCellMouseEventArgs e)
         {
-
             int eColumnIndex = e.ColumnIndex, eRowIndex = e.RowIndex;
             if (eColumnIndex == 1 && eRowIndex >= 0)
             {
@@ -141,20 +136,17 @@ namespace Client
                 int id = target;
                 string name = DB.Room.Parts[target].Name;
                 string IP = "IP";
-                if (FormUserData.formuserdata.Visible == true)
-                {
-                    if (FormUserData.formuserdata.RowIndex != eRowIndex)
-                        FormUserData.formuserdata.Change(eRowIndex,name,id,IP);
-                    return;
-                }
-                FormUserData.formuserdata.Change(eRowIndex,name, id, IP);
+                if (_is_showing) return;
+                FormUserData.formuserdata = new FormUserData(eRowIndex, name, id, IP);
+                _is_showing = true;
                 FormUserData.formuserdata.Show();
             }
         }
         // 鼠标离开关闭信息
         private void dataGridView_list_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
-            FormUserData.formuserdata.Hide();
+            _is_showing = false;
+            FormUserData.formuserdata?.Close();
         }
     }
 }

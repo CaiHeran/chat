@@ -65,6 +65,7 @@
             // 
             AutoScaleDimensions = new SizeF(11F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = SystemColors.ActiveCaption;
             ClientSize = new Size(361, 125);
             ControlBox = false;
             Controls.Add(label_ip);
@@ -72,6 +73,7 @@
             Controls.Add(label_name);
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormUserData";
+            StartPosition = FormStartPosition.Manual;
             Text = "游戏标题";
             ResumeLayout(false);
             PerformLayout();

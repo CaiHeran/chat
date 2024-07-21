@@ -38,7 +38,7 @@ public:
     // 客户端离线
     void leave(User_ptr user)
     {
-        println("[{}] departed.", user->id());
+        //println("[{}] departed.", user->id());
         users.erase(user);
     }
 
