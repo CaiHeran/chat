@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             label_members = new Label();
             button_send = new Button();
             richTextBox_view = new RichTextBox();
@@ -35,14 +36,18 @@
             richTextBox_input = new RichTextBox();
             label_roomid = new Label();
             dataGridView_list = new DataGridView();
+            panel_background = new Panel();
+            errorProvider_send = new ErrorProvider(components);
             ((System.ComponentModel.ISupportInitialize)dataGridView_list).BeginInit();
+            panel_background.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)errorProvider_send).BeginInit();
             SuspendLayout();
             // 
             // label_members
             // 
             label_members.AutoSize = true;
             label_members.Font = new Font("微软雅黑", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label_members.Location = new Point(22, 106);
+            label_members.Location = new Point(20, 109);
             label_members.Margin = new Padding(8, 7, 8, 7);
             label_members.Name = "label_members";
             label_members.Size = new Size(178, 41);
@@ -52,7 +57,7 @@
             // button_send
             // 
             button_send.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            button_send.Location = new Point(1128, 606);
+            button_send.Location = new Point(1126, 609);
             button_send.Margin = new Padding(5, 4, 5, 4);
             button_send.Name = "button_send";
             button_send.Size = new Size(85, 49);
@@ -64,7 +69,7 @@
             // richTextBox_view
             // 
             richTextBox_view.Font = new Font("Microsoft YaHei UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            richTextBox_view.Location = new Point(412, 68);
+            richTextBox_view.Location = new Point(410, 71);
             richTextBox_view.Margin = new Padding(8, 7, 8, 7);
             richTextBox_view.Name = "richTextBox_view";
             richTextBox_view.ReadOnly = true;
@@ -74,7 +79,7 @@
             // 
             // button_exit
             // 
-            button_exit.Location = new Point(1128, 18);
+            button_exit.Location = new Point(1126, 21);
             button_exit.Margin = new Padding(5, 4, 5, 4);
             button_exit.Name = "button_exit";
             button_exit.Size = new Size(85, 38);
@@ -86,7 +91,7 @@
             // richTextBox_input
             // 
             richTextBox_input.Font = new Font("Microsoft YaHei UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            richTextBox_input.Location = new Point(409, 606);
+            richTextBox_input.Location = new Point(407, 609);
             richTextBox_input.Margin = new Padding(8, 7, 8, 7);
             richTextBox_input.Name = "richTextBox_input";
             richTextBox_input.Size = new Size(705, 108);
@@ -97,7 +102,7 @@
             // 
             label_roomid.AutoSize = true;
             label_roomid.Font = new Font("Microsoft YaHei UI", 14F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label_roomid.Location = new Point(22, 20);
+            label_roomid.Location = new Point(20, 23);
             label_roomid.Name = "label_roomid";
             label_roomid.Size = new Size(127, 36);
             label_roomid.TabIndex = 8;
@@ -106,12 +111,32 @@
             // dataGridView_list
             // 
             dataGridView_list.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView_list.Location = new Point(22, 157);
+            dataGridView_list.Location = new Point(20, 160);
             dataGridView_list.Name = "dataGridView_list";
             dataGridView_list.ReadOnly = true;
             dataGridView_list.RowHeadersWidth = 62;
             dataGridView_list.Size = new Size(360, 540);
             dataGridView_list.TabIndex = 9;
+            dataGridView_list.CellMouseLeave += dataGridView_list_CellMouseLeave;
+            dataGridView_list.CellMouseMove += dataGridView_list_CellMouseMove;
+            // 
+            // panel_background
+            // 
+            panel_background.Controls.Add(label_roomid);
+            panel_background.Controls.Add(dataGridView_list);
+            panel_background.Controls.Add(label_members);
+            panel_background.Controls.Add(button_send);
+            panel_background.Controls.Add(richTextBox_input);
+            panel_background.Controls.Add(richTextBox_view);
+            panel_background.Controls.Add(button_exit);
+            panel_background.Location = new Point(3, 2);
+            panel_background.Name = "panel_background";
+            panel_background.Size = new Size(1229, 735);
+            panel_background.TabIndex = 11;
+            // 
+            // errorProvider_send
+            // 
+            errorProvider_send.ContainerControl = this;
             // 
             // FormChatRoom
             // 
@@ -119,20 +144,17 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1232, 737);
             ControlBox = false;
-            Controls.Add(dataGridView_list);
-            Controls.Add(label_roomid);
-            Controls.Add(richTextBox_input);
-            Controls.Add(button_exit);
-            Controls.Add(richTextBox_view);
-            Controls.Add(button_send);
-            Controls.Add(label_members);
+            Controls.Add(panel_background);
+            IsMdiContainer = true;
             Margin = new Padding(5, 4, 5, 4);
             Name = "FormChatRoom";
             Text = "FormRoom";
             Load += FormChatRoom_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridView_list).EndInit();
+            panel_background.ResumeLayout(false);
+            panel_background.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)errorProvider_send).EndInit();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
@@ -143,5 +165,7 @@
         private RichTextBox richTextBox_input;
         private Label label_roomid;
         private DataGridView dataGridView_list;
+        private Panel panel_background;
+        private ErrorProvider errorProvider_send;
     }
 }

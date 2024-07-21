@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Interop;
 
 namespace Client
 {
@@ -48,16 +49,35 @@ namespace Client
 
         private void button_JoinRoom_Click(object sender, EventArgs e)
         {
-            int room_id = int.Parse(textBox_roomid.Text);
+            if (textBox_roomid.Text == "")
+            {
+                errorProvider_join.SetError(button_JoinRoom, "房间号不可为空");
+                label_tip.Text = "房间号不可为空";
+                label_tip.Visible = true;
+                return;
+            }
+            try { int room_id = int.Parse(textBox_roomid.Text); }
+            catch
+            {
+                errorProvider_join.SetError(button_JoinRoom, "房间号格式错误");
+                label_tip.Text = "房间号格式错误";
+                label_tip.Visible = true;
+                return;
+            }
+            
             fj = (_, msg) =>
             {
                 if (msg.ec != 0)
                 {
-                    MessageBox.Show("房间号无效，请重新输入", "游戏标题");
+                    errorProvider_join.SetError(button_JoinRoom, "房间号无效");
+                    label_tip.Text = "房间号无效";
+                    label_tip.Visible = true;
                     return;
                 }
                 else
                 {
+                    errorProvider_join.Clear();
+                    label_tip.Visible = false;
                     Joinroom_Callback();
                     DB.Room = new(msg.room, msg.list); //无异常，加入房间
                     this.Hide();
