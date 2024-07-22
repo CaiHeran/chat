@@ -1,5 +1,4 @@
-﻿using Info;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Interop;
+
+using Info;
 
 namespace Client
 {
@@ -16,12 +16,12 @@ namespace Client
 
     public partial class FormHome : Form
     {
-        public static FormHome? formhome { get; set; }
+        public static FormHome? form { get; set; }
 
         public FormHome()
         {
             InitializeComponent();
-            formhome = this;
+            form = this;
 
             label_ID.Text = $" ID: {DB.Me.Id}";
             label_name.Text = $"Name: {DB.Me.Name}";
@@ -36,8 +36,7 @@ namespace Client
             {
                 Createroom_Callback();
                 this.Hide();
-                FormChatRoom.formchatroom = new FormChatRoom();
-                FormChatRoom.formchatroom!.Show();
+                new FormChatRoom().Show();
             };
             Process.Roomcreate += fc;
             Functions.CreateRoom();
@@ -76,13 +75,13 @@ namespace Client
                 }
                 else
                 {
-                    errorProvider_join.Clear();
-                    label_tip.Visible = false;
                     Joinroom_Callback();
+                    label_tip.Visible = false;
+                    errorProvider_join.Clear();
                     DB.Room = new(msg.room, msg.list); //无异常，加入房间
-                    this.Hide();
-                    FormChatRoom.formchatroom = new FormChatRoom();
-                    FormChatRoom.formchatroom!.Show();
+                    new FormChatRoom();
+                    Hide();
+                    FormChatRoom.form!.Show();
                 }
             };
             Process.Myjoinroom += fj;
@@ -95,7 +94,7 @@ namespace Client
 
         private void button_exit_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var result = MessageBox.Show("真的要退出吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.No) return;
             this.Close();
             Application.Exit();

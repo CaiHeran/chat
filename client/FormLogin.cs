@@ -1,5 +1,4 @@
-﻿using Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,12 +16,9 @@ namespace Client
 
     public partial class FormLogin : Form
     {
-        public static FormLogin? formlogin;
-
         public FormLogin()
         {
             InitializeComponent();
-            formlogin = this;
         }
 
         EventHandler<Login>? f;
@@ -31,9 +27,9 @@ namespace Client
         {
             f = (_, info) => {
                 Login_callback();
-                formlogin!.Hide();
                 new FormHome();
-                FormHome.formhome!.Show();
+                Hide();
+                FormHome.form!.Show();
             };
             Process.Login += f;
             Functions.Login(textBox_name.Text);
@@ -46,7 +42,7 @@ namespace Client
 
         private void button_exit_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var result = MessageBox.Show("真的要退出吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.No) return;
             this.Close();
             Application.Exit();

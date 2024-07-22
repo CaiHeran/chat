@@ -1,5 +1,4 @@
-﻿using Info;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,23 +8,23 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Interop;
+
+using Info;
 
 namespace Client
 {
-
     using DB = Database;
 
     internal partial class FormChatRoom : Form
     {
-        internal static FormChatRoom? formchatroom { get; set; }
+        internal static FormChatRoom? form { get; set; }
         //
         // Forms
         // FormChatRoom
         public FormChatRoom()
         {
             InitializeComponent();
-            formchatroom = this;
+            form = this;
         }
         public void FormChatRoom_Load(object sender, EventArgs e)
         {
@@ -41,6 +40,7 @@ namespace Client
             Process.Leaveroom += (_, msg) =>
             {
                 Grid_DelData(msg.id);
+                DB.Room!.Leave(msg.id);
             };
             Grid_Load();
             label_roomid.Text = $"房间号：{DB.Room.Id}";
@@ -75,10 +75,10 @@ namespace Client
         internal void Grid_AddData(int id, User userinfo)
         {
             // todo:首先判断数据是否异常
-            int cnt = dataGridView_list.Rows.Count;                         // 得到总行数 
-            dataGridView_list.Rows.Insert(cnt, 1);                          // 准备向下一行插入一行数据
-            dataGridView_list.Rows[cnt].Cells[0].Value = id;                //
-            dataGridView_list.Rows[cnt].Cells[1].Value = $"{userinfo.Name}";//
+            int cnt = dataGridView_list.Rows.Count;                         // 得到总行数
+            dataGridView_list.Rows.Insert(cnt);                          // 准备向下一行插入一行数据
+            dataGridView_list.Rows[cnt].Cells[0].Value = id;
+            dataGridView_list.Rows[cnt].Cells[1].Value = $"{userinfo.Name}";
             dataGridView_list.ClearSelection();                             // 去除选择
         }
         internal void Grid_DelData(int id)
@@ -115,32 +115,42 @@ namespace Client
         }
         private void button_exit_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var result = MessageBox.Show("真的要退出房间吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.No) return;
+            Functions.LeaveRoom(DB.Room!.Id);
+            DB.Room = null;
+            form = null;
             this.Close();
-            Application.Exit();
-            Application.ExitThread();
-            Environment.Exit(0);
+            this.Dispose();
+            FormHome.form!.Show();
         }
 
         // 鼠标悬停显示信息
         private void dataGridView_list_CellMouseMove(object sender, DataGridViewCellMouseEventArgs e)
         {
-            int eColumnIndex = e.ColumnIndex, eRowIndex = e.RowIndex;
-            if (eColumnIndex == 1 && eRowIndex >= 0)
+            int row = e.RowIndex;
+            if (row < 0)
             {
-                if (FormUserData.form is not null && FormUserData.form.RowIndex == eRowIndex)
-                    return;
-                int target = (int)dataGridView_list[0, eRowIndex].Value;        // 获取id
-                int id = target;
-                string name = DB.Room.Parts[target].Name;
+                FormUserData.form?.Close();
+                return;
+            }
+            else
+            {
+                if (FormUserData.form is not null)
+                {
+                    if (FormUserData.form.RowIndex == row)
+                        return;
+                    else
+                        FormUserData.form.Close();
+                }
+                int id = (int)dataGridView_list[0, row].Value;        // 获取id
+                string name = DB.Room.Parts[id].Name;
 
-                var r = dataGridView_list.GetCellDisplayRectangle(0, eRowIndex, false);
+                var r = dataGridView_list.GetCellDisplayRectangle(0, row, false);
                 Point p = this.Location + (Size)dataGridView_list.Location;
                 p.X += r.X;
                 p.Y += r.Y;
-                new FormUserData(p, name, id);
-                FormUserData.form.Show();
+                new FormUserData(row, p, name, id).Show();
             }
         }
         // 鼠标离开关闭信息

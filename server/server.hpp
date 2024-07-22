@@ -23,11 +23,11 @@ using Room_ptr = std::shared_ptr<Room>;
 
 void process(User_ptr p, json info);                               // 处理由客户端发来的消息
 
-class GlobalRoom                                                   // 服务器全局信息
+class GlobalRoom
 {
 private:
-    std::set<User_ptr> users;                                      // 用户集合
-    std::map<int, Room_ptr> rooms;                                 // 房间集合（映射）
+    std::set<User_ptr> users;
+    std::map<int, Room_ptr> rooms;
 
 public:
     void join(User_ptr user)
@@ -42,15 +42,15 @@ public:
         users.erase(user);
     }
 
-    Room_ptr create_room(User_ptr host)                            // 创建房间
+    Room_ptr create_room(User_ptr host)
     {
-        int room_id = _new_id();                                   // 获取房间id
-        Room_ptr room = std::make_shared<Room>(room_id, host);     // 房间初始化并获取房间
-        rooms.emplace(room_id, room);                              // 存储房间信息和地址
+        int room_id = _new_id();
+        Room_ptr room = std::make_shared<Room>(room_id, host);
+        rooms.emplace(room_id, room);
         return room;
     }
 
-    Room_ptr get_room(int room_id)                                 // 由id获取房间指针
+    Room_ptr get_room(int room_id)
     {
         return rooms.contains(room_id)? rooms[room_id] : nullptr;
     }
@@ -62,18 +62,18 @@ public:
 private:
     static int _new_id() noexcept                                  // 生成新id
     {
-        static std::atomic_int id{10};                             // ？
+        static std::atomic_int id{10};
         return ++id;                                               // id自增为新id，随后返回
     }
 } global_room;
 
-class User : public std::enable_shared_from_this<User>             // 用户信息
+class User : public std::enable_shared_from_this<User>
 {
 public:
     struct Info {                                                  // 用户信息结构
         int id;
         char name[30];
-        explicit operator json() const                             // 信息消息化
+        explicit operator json() const
         {
             return json {
                 {"id", id},
@@ -82,22 +82,22 @@ public:
         }
     };
 
-    User(asio::ssl::stream<tcp::socket> socket)                    // 新用户初始化
+    User(asio::ssl::stream<tcp::socket> socket)
         : socket_(std::move(socket)),
         timer_(socket_.get_executor())
     {
-        info_.id = _new_id();                                      // 为新用户获取新id
-        println("{} connected, id: [{}]",                            // 在服务器发送通知
+        info_.id = _new_id();
+        println("{} connected, id: [{}]",
             socket_.lowest_layer().remote_endpoint().address().to_string(), info_.id);
         timer_.expires_at(std::chrono::steady_clock::time_point::max());
     }
 
-    void parse_info(json info)                                     // 处理用户姓名信息
+    void parse_info(json info)
     {
-        std::strcpy(info_.name, info["name"].get<std::string>().c_str());// 将用户姓名由结构转入消息中
+        std::strcpy(info_.name, info["name"].get<std::string>().c_str());
     }
 
-    void start()                                                   // ？？？
+    void start()
     {
         co_spawn(socket_.get_executor(),
             [self = shared_from_this()] {return self->do_shake_hands();},
@@ -105,37 +105,37 @@ public:
     }
 
     template<class T>
-    void deliver(T&& msg)                                              // 输出被递送的消息（下层）
+    void deliver(T&& msg)
     {
         write_msgs.emplace_back(std::forward<T>(msg));
-        timer_.cancel_one();                                           // ？？？
+        timer_.cancel_one();
         println("Deliver to [{}]: {}", info_.id, msg);
     }
     template<class T>
-    void deliver(int type, T&& data)                    // 输出被递送的消息（上层）——（吴桐：将msg改为data）
+    void deliver(int type, T&& data)
     {
-        std::string message = json{                                    // 消息由数据转为信息
+        std::string message = json{
             {"type", type},
             {"data", std::forward<T>(data)}
         }.dump();
         deliver(message);
     }
 
-    const Info& info() const { return info_; }                           // 获取用户信息
-    int id() const noexcept { return info_.id; }                         // 获取用户id
-    Room_ptr room() { return room_ptr; }                               // 获取所在房间
-    Room_ptr create_room()                                             // 创建房间并返回
+    const Info& info() const { return info_; }
+    int id() const noexcept { return info_.id; }
+    Room_ptr room() { return room_ptr; }
+    Room_ptr create_room()
     {
         if (room_ptr) std::terminate();
         room_ptr = global_room.create_room(shared_from_this());
         return room_ptr;
     }
-    bool join_room(int room_id);                                       // 加入房间并返回是否加入成功
+    bool join_room(int room_id);
 
     void leave_room(int room_id);
 
 private:
-    awaitable<void> do_shake_hands()                                   // ？？？
+    awaitable<void> do_shake_hands()
     {
         co_await socket_.async_handshake(asio::ssl::stream_base::server, use_awaitable);
         println("[{}] connected safely.", info_.id);
@@ -195,7 +195,7 @@ private:
 
     void stop();                                                      // 用户异常断开连接
 
-    static int _new_id()                                              // 生成新用户id
+    static int _new_id()
     {
         static std::atomic_int id{10};
         return ++id;
@@ -206,12 +206,12 @@ private:
     Room_ptr room_ptr;  // 房间地址
     Info info_;         // 用户信息结构
 
-    asio::ssl::stream<tcp::socket> socket_;                          // ？？？
-    asio::steady_timer timer_;                                       // ？？？
+    asio::ssl::stream<tcp::socket> socket_;
+    asio::steady_timer timer_;
     std::deque<std::string> write_msgs;                              // 输出信息的队列
 };
 
-awaitable<void> listen(tcp::acceptor acceptor_, std::string CN = "The Server")    // ？？？
+awaitable<void> listen(tcp::acceptor acceptor_, std::string CN = "The Server")
 {
     constexpr std::string_view DHparam =
 R"(-----BEGIN DH PARAMETERS-----
@@ -254,28 +254,27 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
     }
 }
 
-class Room                                                           // 房间信息
+class Room
 {
 private:
-    static constexpr int host_num = 1;                               // 房主序号
     const int room_id;                                               // 本房间房间号
     std::map<int, User_ptr> parts;   // id -> user_ptr
 
 public:
-    Room(int room_id, User_ptr host)                                 // 新房间初始化
+    Room(int room_id, User_ptr host)
       : room_id(room_id),
         parts{{host->id(), host}}
         {}
 
-    int id() const { return room_id; }                               // 获取房间id
+    int id() const { return room_id; }
     // 给所有人发送信息
-    void deliver(const std::string& msg)                             // 发送消息（底层）
+    void deliver(const std::string& msg)
     {
         for (const auto& [_, p] : parts)
             p->deliver(msg);
     }
     template<class T>
-    void deliver(int type, T&& data)                   // 将type和data合并后发送消息
+    void deliver(int type, T&& data)
     {
         std::string message = json{
             {"type", type},
@@ -299,9 +298,9 @@ public:
         deliver(message, except_id);
     }
 
-    void join(User_ptr p)                                            // 加入房间，参数为加入者地址
+    void join(User_ptr p)
     {
-        parts.emplace(p->id(), p);                   // 将用户加入
+        parts.emplace(p->id(), p);
         json roominfo = get_roominfo();
         roominfo.emplace("ec", 0);
         p->deliver(21, roominfo);
@@ -310,7 +309,7 @@ public:
             {"room", room_id},
             {"info", json(p->info())}
         };
-        deliver(21, info, p->id());                          // 向服务器发送用户信息
+        deliver(21, info, p->id());
     }
 
     void leave(int id)
@@ -328,15 +327,15 @@ public:
         });
     }
 
-    json get_roominfo() const                                            // 房间信息转化为消息并返回
+    json get_roominfo() const
     {
         json::array_t list;
-        for (auto [_, part]: parts)                  // 遍历参与者
+        for (auto [_, part]: parts)
         {
             json t {
                 json(part->info())
             };
-            list.emplace_back(std::move(t));           // 将参与者信息加入list
+            list.emplace_back(std::move(t));
         }
         json j {
             {"room", room_id},
@@ -346,9 +345,9 @@ public:
     }
 };
 
-bool User::join_room(int room_id)//见上面
+bool User::join_room(int room_id)
 {
-    if (room_ptr) std::terminate();
+    Expects(!room_ptr);
     auto room = global_room.get_room(room_id);
     if (!room)
         return false;
@@ -361,6 +360,7 @@ void User::leave_room(int room_id)
 {
     Expects(room_id == room_ptr->id());
     room_ptr->leave(id());
+    room_ptr.reset();
 }
 
 void User::stop()
@@ -373,9 +373,9 @@ void User::stop()
     timer_.cancel();
 }
 
-void process(User_ptr p, json message)//见上面
+void process(User_ptr p, json message)
 {
-    switch (message["type"].get<int>()) // info type
+    switch (message["type"].get<int>())
     {
     // 注册
     case 1: {
@@ -419,7 +419,7 @@ void process(User_ptr p, json message)//见上面
         p->room()->deliver(message.dump());
         break;
     }
-    
+    // 主动退出房间
     case 23: {
         json info = message["data"];
         p->leave_room(info["room"].get<int>());

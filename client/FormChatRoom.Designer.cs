@@ -34,7 +34,6 @@
             richTextBox_view = new RichTextBox();
             richTextBox_input = new RichTextBox();
             button_send = new Button();
-            label_members = new Label();
             dataGridView_list = new DataGridView();
             label_roomid = new Label();
             panel_background = new Panel();
@@ -93,28 +92,20 @@
             button_send.UseVisualStyleBackColor = true;
             button_send.Click += button_send_Click;
             // 
-            // label_members
-            // 
-            label_members.AutoSize = true;
-            label_members.Font = new Font("微软雅黑", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            label_members.Location = new Point(13, 74);
-            label_members.Margin = new Padding(5);
-            label_members.Name = "label_members";
-            label_members.Size = new Size(117, 28);
-            label_members.TabIndex = 1;
-            label_members.Text = "房间成员：";
-            // 
             // dataGridView_list
             // 
+            dataGridView_list.AllowUserToAddRows = false;
+            dataGridView_list.AllowUserToDeleteRows = false;
+            dataGridView_list.AllowUserToOrderColumns = true;
             dataGridView_list.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             dataGridView_list.BackgroundColor = SystemColors.Window;
             dataGridView_list.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView_list.Location = new Point(13, 109);
+            dataGridView_list.Location = new Point(13, 91);
             dataGridView_list.Margin = new Padding(5);
             dataGridView_list.Name = "dataGridView_list";
             dataGridView_list.ReadOnly = true;
             dataGridView_list.RowHeadersWidth = 62;
-            dataGridView_list.Size = new Size(201, 434);
+            dataGridView_list.Size = new Size(201, 452);
             dataGridView_list.TabIndex = 9;
             dataGridView_list.CellMouseLeave += dataGridView_list_CellMouseLeave;
             dataGridView_list.CellMouseMove += dataGridView_list_CellMouseMove;
@@ -134,7 +125,6 @@
             // 
             panel_background.Controls.Add(label_roomid);
             panel_background.Controls.Add(dataGridView_list);
-            panel_background.Controls.Add(label_members);
             panel_background.Controls.Add(button_send);
             panel_background.Controls.Add(richTextBox_input);
             panel_background.Controls.Add(richTextBox_view);
@@ -153,7 +143,6 @@
             ClientSize = new Size(862, 557);
             ControlBox = false;
             Controls.Add(panel_background);
-            IsMdiContainer = true;
             Name = "FormChatRoom";
             Text = "FormRoom";
             Load += FormChatRoom_Load;
@@ -169,7 +158,6 @@
         private Panel panel_background;
         private Label label_roomid;
         private DataGridView dataGridView_list;
-        private Label label_members;
         private Button button_send;
         private RichTextBox richTextBox_input;
         private RichTextBox richTextBox_view;
