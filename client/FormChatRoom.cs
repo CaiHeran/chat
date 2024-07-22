@@ -18,8 +18,7 @@ namespace Client
 
     internal partial class FormChatRoom : Form
     {
-        internal static FormChatRoom formchatroom { get; set; }
-        bool _is_showing = false;
+        internal static FormChatRoom? formchatroom { get; set; }
         //
         // Forms
         // FormChatRoom
@@ -53,8 +52,6 @@ namespace Client
         {
             const int Listnum = 2;
             dataGridView_list.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;        // 自动调整行高
-            dataGridView_list.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridView_list.RowHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;// 居中
             //dataGridView_list.RowHeadersWidth = 4;                                           // 设置表格头列（无内容）宽度，最小为4
             dataGridView_list.AllowUserToAddRows = false;                                      // 不可以增加空行
             for (int i = 0; i < Listnum; i++)
@@ -132,21 +129,24 @@ namespace Client
             int eColumnIndex = e.ColumnIndex, eRowIndex = e.RowIndex;
             if (eColumnIndex == 1 && eRowIndex >= 0)
             {
+                if (FormUserData.form is not null && FormUserData.form.RowIndex == eRowIndex)
+                    return;
                 int target = (int)dataGridView_list[0, eRowIndex].Value;        // 获取id
                 int id = target;
                 string name = DB.Room.Parts[target].Name;
-                string IP = "IP";
-                if (_is_showing) return;
-                FormUserData.formuserdata = new FormUserData(eRowIndex, name, id, IP);
-                _is_showing = true;
-                FormUserData.formuserdata.Show();
+
+                var r = dataGridView_list.GetCellDisplayRectangle(0, eRowIndex, false);
+                Point p = this.Location + (Size)dataGridView_list.Location;
+                p.X += r.X;
+                p.Y += r.Y;
+                new FormUserData(p, name, id);
+                FormUserData.form.Show();
             }
         }
         // 鼠标离开关闭信息
         private void dataGridView_list_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
-            _is_showing = false;
-            FormUserData.formuserdata?.Close();
+            FormUserData.form?.Close();
         }
     }
 }

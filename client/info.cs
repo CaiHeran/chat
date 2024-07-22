@@ -22,7 +22,7 @@ namespace Info
     public record UserFullInfo
     (
         int id,
-        IPAddress ipe,
+        IPAddress ip,
         UserInfo info
     ) : Info;
 
