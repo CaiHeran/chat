@@ -1,5 +1,4 @@
-﻿using Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,48 +8,54 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using Info;
+
 namespace Client
 {
+    using DB = Database;
+
     public partial class FormLogin : Form
     {
-        public static FormLogin? formlogin;
-
         public FormLogin()
         {
             InitializeComponent();
-            formlogin = this;
         }
 
-        // buttons
-        // button_login
-        //
+        EventHandler<Login>? f;
+
         private void button_login_Click(object sender, EventArgs e)
         {
-            Functions.Login(textBox_name.Text, (_, info) =>
+            f = (_, info) =>
             {
-                //TODO
-            });
+                Login_callback();
+                new FormHome();
+                Hide();
+                FormHome.form!.Show();
+            };
+            Process.Login += f;
+            Functions.Login(textBox_name.Text);
+        }
 
-        }
-        //
-        // button_back
-        //
-        private void button_back_Click(object sender, EventArgs e)
+        public void Login_callback()
         {
-            this.Hide();
-            FormConnect.formconnect.Show();
+            Process.Login -= f;
         }
-        //
-        // button_exit
-        //
-        private void button_exit_Click(object sender, EventArgs e)
+
+        private void Form_Closing(object sender, FormClosingEventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.No) return;
-            this.Close();
-            Application.Exit();
-            Application.ExitThread();
-            Environment.Exit(0);
+            var result = MessageBox.Show("真的要退出吗？", "Login", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+            if (result == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
+            }
+            else
+            {
+                e.Cancel = false;
+                Application.Exit();
+                Application.ExitThread();
+                Environment.Exit(0);
+            }
         }
     }
 }

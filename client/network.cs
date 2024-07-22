@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -19,10 +20,14 @@ namespace Client
 {
     internal static class Server
     {
-        private static SslStream stream;
-        private static AsyncQueue<string> messages = new();
-
-        public static void Connect(string host, int port)
+        private static SslStream? stream;
+        public static bool IsConnected {
+            get {
+                return stream != null;
+            }
+        }
+        private static AsyncQueue<string> messages = new();                           // 消息队列
+        public static bool Connect(string host, int port)                             // 连接服务器，参数为服务器和端口
         {
             TcpClient client = new TcpClient(host, port);
             SslStream sslStream = new SslStream(
@@ -33,54 +38,70 @@ namespace Client
             );
             try
             {
-                sslStream.AuthenticateAsClient("");
+                sslStream.AuthenticateAsClient("");                                   // ？
             }
-            catch (AuthenticationException e)
+            catch (Exception e)                                                       // 认证失败
             {
-                Console.WriteLine("Exception: {0}", e.Message);
-                if (e.InnerException != null)
-                {
-                    Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
-                }
-                client.Close();
-                return;
+                client.Close();                                                       // 关闭连接
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
+
+            if (!sslStream.IsAuthenticated)
+            {
+                client.Close();
+                return false;
+            }
+
             stream = sslStream;
-            Reader();
-            Writer();
+            Process.Start();
+            Task.Factory.StartNew(Reader, TaskCreationOptions.LongRunning);           // 开启消息接受和处理
+            Task.Factory.StartNew(Writer, TaskCreationOptions.LongRunning);           // 开启消息输出
+            return true;
         }
 
-        public static void Send(string message)
+        public static void Send(string message)                                       // 发送消息（下层实践）
         {
-            messages.Enqueue(message);
+            messages.Enqueue(message);                                                // 将发送消息的事件加入队列
         }
-        public static void Send(int type, string data)
+        public static void Send(int type, string data)                                // 发送消息（上层整合）
         {
-            Send($$"""{"type":{{type}},"data":{{JsonSerializer.Serialize(data)}}}""");
+            Send($$"""{"type":{{type}},"data":{{data}}}""");
         }
-        private static async void Writer()
+        private static async Task Writer()
         {
-            StreamWriter writer = new(stream);
-            while (true)
+            try {
+                StreamWriter writer = new(stream);
+                while (true)
+                {
+                    string msg = await messages.DequeueAsync();                           // 等待并获取刚处理的信息
+                    await writer.WriteLineAsync(msg);                                     // 输出信息并等待输出完成
+                    await writer.FlushAsync();                                            // 刷新缓冲区
+                }
+            }
+            catch (Exception e)
             {
-                var msg = await messages.DequeueAsync();
-                await writer.WriteLineAsync(msg);
-                writer.Flush();
+                stream.Close();
             }
         }
-        private static async void Reader()
+        private static async Task Reader()
         {
-            StreamReader sr = new(stream);
-            while (true)
+            try
             {
-                StringBuilder messageData = new StringBuilder();
-                // Read the client's test message.
-                string? msg = await sr.ReadLineAsync();
-                if (msg == null) { break; } // ???
-                Process.ProcessMessage(msg);
+                StreamReader sr = new(stream, Encoding.UTF8);
+                while (true)
+                {
+                    StringBuilder messageData = new StringBuilder();                      // 读取信息队列
+                    string? msg = await sr.ReadLineAsync();                               // 等待信息读取完毕
+                    if (msg == null) { break; }                                           // ???（蔡和然的疑问）（吴桐的猜测：用return？）
+                    Task.Run(() => Process.ProcessMessage(msg));                          // 处理信息
+                }
+            }
+            catch (Exception e)
+            {
+                stream.Close();
             }
         }
-        private static bool ValidateServerCertificate(
+        private static bool ValidateServerCertificate(                                // 验证服务器证书
                 object sender,
                 X509Certificate certificate,
                 X509Chain chain,
@@ -91,12 +112,12 @@ namespace Client
 
             string information = $"Server's certificate:\n{certificate}\nAuthenticate?";
 
-            var res = MessageBox.Show($"{information}",//对话框的显示内容
-              "确认", //对话框的标题 
+            var res = MessageBox.Show($"{information}",
+              "确认",
               MessageBoxButtons.YesNo,
               MessageBoxIcon.Information);
 
-            return res == DialogResult.Yes;
+            return res == DialogResult.Yes;                                             // 验证用户回答
         }
     }
 }

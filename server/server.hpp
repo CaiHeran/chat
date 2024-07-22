@@ -1,4 +1,4 @@
-
+﻿
 #ifndef __SERVER_CPP__
 #define __SERVER_CPP__
 
@@ -6,7 +6,8 @@
 #include "basics.hpp"
 #include "cert.hpp"
 
-using fmt::print, fmt::println;
+using std::print, std::println;
+using std::format;
 
 using asio::ip::tcp;
 using asio::awaitable;
@@ -16,19 +17,17 @@ using asio::use_awaitable;
 
 class GlobalRoom;
 class User;
-struct Player;
-class PlayRoom;
-
+class Room;
 using User_ptr = std::shared_ptr<User>;
-using PlayRoom_ptr = std::shared_ptr<PlayRoom>;
+using Room_ptr = std::shared_ptr<Room>;
 
-void process(User_ptr p, json info);
+void process(User_ptr p, json info);                               // 处理由客户端发来的消息
 
 class GlobalRoom
 {
 private:
     std::set<User_ptr> users;
-    std::map<int, PlayRoom_ptr> playrooms;
+    std::map<int, Room_ptr> rooms;
 
 public:
     void join(User_ptr user)
@@ -36,43 +35,44 @@ public:
         users.insert(user);
     }
 
+    // 客户端离线
     void leave(User_ptr user)
     {
+        //println("[{}] departed.", user->id());
         users.erase(user);
     }
 
-    PlayRoom_ptr create_room(User_ptr host)
+    Room_ptr create_room(User_ptr host)
     {
         int room_id = _new_id();
-        auto room = std::make_shared<PlayRoom>(room_id, host);
-        playrooms.emplace(room_id, room);
+        Room_ptr room = std::make_shared<Room>(room_id, host);
+        rooms.emplace(room_id, room);
         return room;
     }
 
-    PlayRoom_ptr get_room(int room_id)
+    Room_ptr get_room(int room_id)
     {
-        try {
-            return playrooms.at(room_id);
-        }
-        catch (std::out_of_range) {
-            return nullptr;
-        }
+        return rooms.contains(room_id)? rooms[room_id] : nullptr;
+    }
+
+    void delete_room(int id)
+    {
+        rooms.erase(id);
     }
 private:
-    static int _new_id() noexcept
+    static int _new_id() noexcept                                  // 生成新id
     {
         static std::atomic_int id{10};
-        return ++id;
+        return ++id;                                               // id自增为新id，随后返回
     }
 } global_room;
 
 class User : public std::enable_shared_from_this<User>
 {
 public:
-    struct Info {
+    struct Info {                                                  // 用户信息结构
         int id;
         char name[30];
-
         explicit operator json() const
         {
             return json {
@@ -83,11 +83,11 @@ public:
     };
 
     User(asio::ssl::stream<tcp::socket> socket)
-      : socket_(std::move(socket)),
+        : socket_(std::move(socket)),
         timer_(socket_.get_executor())
     {
         info_.id = _new_id();
-        fmt::println("{} connected, id: {}",
+        println("{} connected, id: [{}]",
             socket_.lowest_layer().remote_endpoint().address().to_string(), info_.id);
         timer_.expires_at(std::chrono::steady_clock::time_point::max());
     }
@@ -104,61 +104,41 @@ public:
             detached);
     }
 
-    void deliver(const std::string& msg)
+    template<class T>
+    void deliver(T&& msg)
     {
-        write_msgs.push_back(msg);
+        write_msgs.emplace_back(std::forward<T>(msg));
         timer_.cancel_one();
-        fmt::println("Deliver to {}: {}", info_.id, msg);
+        println("Deliver to [{}]: {}", info_.id, msg);
     }
-    void deliver(int type, const std::string& msg)
+    template<class T>
+    void deliver(int type, T&& data)
     {
         std::string message = json{
             {"type", type},
-            {"data", msg}
+            {"data", std::forward<T>(data)}
         }.dump();
-        write_msgs.push_back(msg);
-        timer_.cancel_one();
-        fmt::println("Deliver to {}: {}", info_.id, msg);
+        deliver(message);
     }
 
-    const Info& info() const
-    {
-        return info_;
-    }
-
-    int id() const noexcept
-    {
-        return info_.id;
-    }
-    
-    int get_num() const noexcept
-    {
-        return num;
-    }
-    int get_order() const noexcept
-    {
-        return order;
-    }
-
-    auto room()
-    {
-        return room_ptr;
-    }
-
-    PlayRoom_ptr create_room()
+    const Info& info() const { return info_; }
+    int id() const noexcept { return info_.id; }
+    Room_ptr room() { return room_ptr; }
+    Room_ptr create_room()
     {
         if (room_ptr) std::terminate();
         room_ptr = global_room.create_room(shared_from_this());
         return room_ptr;
     }
-
     bool join_room(int room_id);
+
+    void leave_room(int room_id);
 
 private:
     awaitable<void> do_shake_hands()
     {
         co_await socket_.async_handshake(asio::ssl::stream_base::server, use_awaitable);
-        fmt::println("[{}] connected safely.", info_.id);
+        println("[{}] connected safely.", info_.id);
 
         global_room.join(shared_from_this());
 
@@ -171,25 +151,25 @@ private:
             detached);
     }
 
-    awaitable<void> reader()
+    awaitable<void> reader()                                           // 输出从客户端获取的信息并处理
     try {
-        fmt::println("Start to read from [{}]", info_.id);
+        println("Start to read from [{}]", info_.id);
         for (std::string s;;)
         {
             std::size_t n = co_await asio::async_read_until(socket_,
                 asio::dynamic_buffer(s, 256), '\n', use_awaitable);
-            std::string_view sv(s.data(), s.data()+n);
-            fmt::println("Receive from {}: {}", info_.id, sv);
+            std::string_view sv(s.data(), s.data()+n-1); // 去除\r(CR)
+            println("Receive from [{}]: {}", info_.id, sv);
             process(shared_from_this(), json::parse(sv));
             s.erase(0, n);
         }
     }
     catch (std::exception& e) {
-        fmt::println("[{}] Exception: {}", info_.id, e.what());
+        println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
-    awaitable<void> writer()
+    awaitable<void> writer()                                           // 输出？？？
     try {
         while (socket_.lowest_layer().is_open())
         {
@@ -200,26 +180,20 @@ private:
             }
             else
             {
-                fmt::println("Sending:{}", write_msgs.front());
-                write_msgs.front()[write_msgs.front().size()] = '\n';
+                println("Sending to [{}]: {}", id(), write_msgs.front());
                 co_await asio::async_write(socket_,
-                    asio::buffer(write_msgs.front().data(), write_msgs.front().size()+1), use_awaitable);
+                    asio::buffer(write_msgs.front()), use_awaitable);
                 write_msgs.pop_front();
+                co_await asio::async_write(socket_, asio::buffer("\r\n"), use_awaitable);
             }
         }
     }
     catch (std::exception& e) {
-        fmt::println("[{}] Exception: {}", info_.id, e.what());
+        println("[{}] Exception: {}", info_.id, e.what());
         stop();
     }
 
-    void stop()
-    {
-        println("{} disconnected", id());
-        global_room.leave(shared_from_this());
-        socket_.shutdown();
-        timer_.cancel();
-    }
+    void stop();                                                      // 用户异常断开连接
 
     static int _new_id()
     {
@@ -227,16 +201,14 @@ private:
         return ++id;
     }
 
+
 private:
-    friend class PlayRoom;  // 设置order
-    int num=-1;     // -1代表未进入房间
-    int order=-1;   // -1代表未参加游戏
-    PlayRoom_ptr room_ptr;
-    Info info_;
+    Room_ptr room_ptr;  // 房间地址
+    Info info_;         // 用户信息结构
 
     asio::ssl::stream<tcp::socket> socket_;
     asio::steady_timer timer_;
-    std::deque<std::string> write_msgs;
+    std::deque<std::string> write_msgs;                              // 输出信息的队列
 };
 
 awaitable<void> listen(tcp::acceptor acceptor_, std::string CN = "The Server")
@@ -265,15 +237,15 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
         | asio::ssl::context::single_dh_use);
     {
     auto [cert, prikey, sha1] = make_cert(CN);
-    fmt::print("Certificate fingerprint: ");
+    print("Certificate fingerprint: ");
     for (int i = 0; i < 20; i++)
-        fmt::print("{:x}{:x}", sha1[i] >> 4, sha1[i] & 0b1111);
-    fmt::println("");
+        print("{:x}{:x}", sha1[i] >> 4, sha1[i] & 0b1111);
+    println("");
     context_.use_certificate(asio::const_buffer(cert.c_str(), cert.size()), asio::ssl::context::pem);
     context_.use_private_key(asio::const_buffer(prikey.c_str(), prikey.size()), asio::ssl::context::pem);
     context_.use_tmp_dh(asio::const_buffer(DHparam.data(), DHparam.size()));
     }
-    fmt::println("Listening...");
+    println("Listening...");
     while (true)
     {
         std::make_shared<User>(
@@ -282,77 +254,33 @@ NuOJ1xk1CWjjrYhJNtWK6OMUpgNrTIJpOKwvlHy8b6MPgJSOubxnEE8CAQICAgFF
     }
 }
 
-struct Player
-{
-    enum Type : bool {Human, Robot};
-    Type type;
-    int num;
-    User_ptr part_ptr;
-    Cards cards;
-};
-
-class PlayRoom
+class Room
 {
 private:
-    struct Game;
-    static constexpr int host_num = 1;
-    const int room_id;
-    int part_cnt=0;
-    std::map<int, User_ptr> parts;
-    std::vector<Game> games;
-    struct Game
-    {
-        Cards origin;
-        std::vector<Player> players;
-        std::vector<Operation> ops;
-
-        Game(PlayRoom *upper, const Cards& cards, const std::vector<int>& nums)
-            : origin(cards)
-        {
-            int n = nums.size();
-            players.reserve(nums.size());
-            for (int i=0, num; i<n; i++)
-            {
-                num = nums[i];
-                players.emplace_back(Player{
-                    .type = num==-1? Player::Robot : Player::Human,
-                    .num = num,
-                    .part_ptr = upper->parts[num]
-                });
-                if (num != -1)
-                    upper->parts[num]->order = i;
-            }
-            _deal_cards(); // 然后洗牌
-        }
-
-        void _deal_cards();
-        json get_gameinfo();
-        void deliver();		// 给每位玩家发送房间信息和自己的牌
-
-        void push_op(Operation op)
-        {
-            ops.push_back(op);
-            /* TODO Robot
-            int cur = ops.size() % players.size();
-            */
-        }
-
-    };
+    const int room_id;                                               // 本房间房间号
+    std::map<int, User_ptr> parts;   // id -> user_ptr
 
 public:
-    PlayRoom(int room_id, User_ptr host)
+    Room(int room_id, User_ptr host)
       : room_id(room_id),
-        part_cnt(1),
-        parts{{host_num, host}}
+        parts{{host->id(), host}}
         {}
 
     int id() const { return room_id; }
-
     // 给所有人发送信息
     void deliver(const std::string& msg)
     {
         for (const auto& [_, p] : parts)
             p->deliver(msg);
+    }
+    template<class T>
+    void deliver(int type, T&& data)
+    {
+        std::string message = json{
+            {"type", type},
+            {"data", std::forward<T>(data)}
+        }.dump();
+        deliver(message);
     }
     void deliver(const std::string& msg, const int except_id)
     {
@@ -360,164 +288,106 @@ public:
             if (p->id() != except_id)
                 p->deliver(msg);
     }
-
-    int join(User_ptr p)
+    template<class T>
+    void deliver(int type, T&& data, const int except_id)
     {
-        part_cnt++;
-        parts.emplace(part_cnt, p);
+        std::string message = json{
+            {"type", type},
+            {"data", std::forward<T>(data)}
+        }.dump();
+        deliver(message, except_id);
+    }
+
+    void join(User_ptr p)
+    {
+        parts.emplace(p->id(), p);
         json roominfo = get_roominfo();
-        roominfo.emplace("type", 11);
-        roominfo.emplace("num", part_cnt);
-        p->deliver(roominfo.dump());
+        roominfo.emplace("ec", 0);
+        p->deliver(21, roominfo);
 
         json info {
-            {"type", 11},
-            {"num", part_cnt},
+            {"room", room_id},
             {"info", json(p->info())}
         };
-        deliver(info.dump(), p->id());
-        return part_cnt;
+        deliver(21, info, p->id());
     }
 
-    void new_game(const Cards& cards, const std::vector<int>& nums)
+    void leave(int id)
     {
-        games.emplace_back(this, cards, nums);
-    }
-    void new_game(json info)
-    {
-        Cards cards(info["cards"].get<json::array_t>());
-        auto nums = info["list"].get<std::vector<int>>();
-        new_game(cards, nums);
-    }
-    // deliver initial info with cards info
-    void deliver_gameinfo()
-    {
-        games.back().deliver();
+        println("[{}] left room {}", id, room_id);
+        parts.erase(id);
+        if (parts.empty()) {
+            global_room.delete_room(room_id);
+            return;
+        }
+
+        deliver(23, json{
+            {"room", room_id},
+            {"id", id}
+        });
     }
 
-    bool push_op(int order, json info)
-    {
-        Operation op(info);
-        if (!push_op(order, op))
-            return false;
-        deliver(info);
-    }
-
-    json get_roominfo()
+    json get_roominfo() const
     {
         json::array_t list;
-        for (auto [num, part]: parts)
+        for (auto [_, part]: parts)
         {
-            auto &info = part->info();
             json t {
-                {"num", num},
-                {"id", info.id},
-                {"name", info.name}
+                json(part->info())
             };
             list.emplace_back(std::move(t));
         }
         json j {
-            {"id", room_id},
-            {"host", host_num},
+            {"room", room_id},
+            {"list", std::move(list)},
         };
-        j.emplace("list", std::move(list));
-
         return j;
     }
-
-private:
-    bool push_op(int order, Operation op)
-    {
-        if (games.back().ops.size() % games.back().players.size() != order)
-            return false;
-        games.back().push_op(op);
-        return true;
-    }
-    /**
-private:
-     * player和ops都是0起
-     * games.end().ops.size() % games.end().players.size() 就是当前出牌人
-     * 从games.end().ops中获取历史出牌
-     */
-    // Operation get_robot_op(/*水平*/);
-
 };
 
 bool User::join_room(int room_id)
 {
-    if (room_ptr) std::terminate();
+    Expects(!room_ptr);
     auto room = global_room.get_room(room_id);
     if (!room)
         return false;
+    room_ptr = room;
     room->join(shared_from_this());
     return true;
 }
 
-void PlayRoom::Game::_deal_cards()
+void User::leave_room(int room_id)
 {
-    int n = players.size();
-    std::default_random_engine e(std::random_device{}());
-    std::vector<std::uint8_t> cardlist;
-    int total_cards = origin.count();
-    int player_cards = total_cards / n;
-    cardlist.reserve(total_cards);
-
-    for (int i=0; i<9; i++)
-    {
-        int m = *(reinterpret_cast<int*>(&origin) + i);
-        for (int j=0; j<m; j++)
-            cardlist.push_back(i);
-    }
-
-    std::ranges::shuffle(cardlist, e);
-
-    int i=0;
-    for (Player &player: players)
-    {
-        for (int j=0; j<player_cards; i++, j++)
-            ++*(reinterpret_cast<int*>(&player.cards) + cardlist[i]);
-    }
+    Expects(room_id == room_ptr->id());
+    room_ptr->leave(id());
+    room_ptr.reset();
 }
 
-json PlayRoom::Game::get_gameinfo()
+void User::stop()
 {
-    json::array_t nums;
-    for (const auto& p: players)
-        nums.push_back(p.num);
-    json info {
-        {"type", 20},
-        {"list", std::move(nums)},
-        {"origin", json(origin)}
-    };
-    return info;
-}
-
-void PlayRoom::Game::deliver()
-{
-    json info = get_gameinfo();
-    info.emplace("self", json::array_t{});
-    for (const auto& p: players)
-    {
-        info["self"] = json(p.cards);
-        p.part_ptr->deliver(info.dump());
-    }
+    println("[{}] disconnected", id());
+    if (room_ptr)
+        room_ptr->leave(id());
+    global_room.leave(shared_from_this());
+    socket_.shutdown();
+    timer_.cancel();
 }
 
 void process(User_ptr p, json message)
 {
-    switch (message["type"].get<int>()) // info type
+    switch (message["type"].get<int>())
     {
     // 注册
     case 1: {
-        json info = json::parse(message["data"].get<std::string>());
+        json info = message["data"];
         p->parse_info(info);
         info.emplace("id", p->info().id);
-        p->deliver(1, message.dump());
+        p->deliver(1, info);
         break;
     }
     // 修改个人信息
     case 10: {
-        json info = json::parse(message["data"].get<std::string>());
+        json info = message["data"];
         p->parse_info(info);
         p->deliver(message.dump());
         break;
@@ -527,51 +397,35 @@ void process(User_ptr p, json message)
         Expects(!p->room());
         p->create_room();
         json info {
-            {"type", 10},
-            {"id", p->room()->id()}
+            {"type", 20},
+            {"data", {{"room", p->room()->id()}}}
         };
         p->deliver(info.dump());
         break;
     }
     // 加入房间
     case 21: {
-        json info = json::parse(message["data"].get<std::string>());
-        bool ec = ! p->join_room(info["id"].get<int>());
+        json info = message["data"];
+        bool ec = ! p->join_room(info["room"].get<int>());
         if (ec) {
-            json info {
-                {"type", 11},
-                {"ec", (int)ec}
-            };
-            p->deliver(info.dump());
+            p->deliver(21, json{{"ec", (int)ec}});
         }
         break;
     }
     // 在房间中发送信息
     case 22: {
+        json info = message["data"];
         //TODO check info["id"]==p->room().id();
-        json info = json::parse(message["data"].get<std::string>());
-        p->room()->deliver(info["message"]);
+        p->room()->deliver(message.dump());
+        break;
+    }
+    // 主动退出房间
+    case 23: {
+        json info = message["data"];
+        p->leave_room(info["room"].get<int>());
         break;
     }
 
-    case 30: {
-        //TODO: check whether p is the host
-        json info = json::parse(message["data"].get<std::string>());
-        p->room()->new_game(info);
-        p->room()->deliver_gameinfo();
-        break;
-    }
-    case 31: {
-        json info = json::parse(message["data"].get<std::string>());
-        int order = p->get_order();
-        bool ec = ! p->room()->push_op(order, info["op"]);
-        json infoback {
-            {"type", 21},
-            {"ec", (int)ec}
-        };
-        p->deliver(infoback.dump());
-        break;
-    }
     default:
         ;//TODO
     }

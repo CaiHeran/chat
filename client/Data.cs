@@ -4,10 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Info;
+
 namespace Client
 {
     using DB = Database;
 
+    //用户信息
     internal class User
     {
         public int Id { get; private set; } = 0;
@@ -19,37 +22,54 @@ namespace Client
             Id = id;
             Name = name;
         }
+        public User(UserBriefInfo info)
+        {
+            Id = info.id;
+            Name = info.name;
+        }
 
         public void SetId(int id) => Id = id;
         public void SetName(string name) => Name = name;
     }
 
+    //房间信息
     internal class Room
     {
         public int Id { get; private set; }
-        public int Num { get; private set; }
+        // 成员列表: id -> user
         public Dictionary<int, User> Parts { get; private set; } = [];
 
-        public Room(int id)
+        // 作为房主创建房间时构造
+        public Room(int roomid)
         {
-            Id = id;
-            Num = 0;
-            Parts.Add(0, DB.Me);
+            Id = roomid;
+            Parts.Add(DB.Me.Id, DB.Me);
         }
-        public Room(int id, int mynum, Dictionary<int, Info.UserBriefInfo> parts)
+        // 加入房间时构造
+        public Room(int id, List<UserBriefInfo> parts)
         {
             Id = id;
-            Num = mynum;
-            foreach (var (num, info) in parts)
+            foreach (var info in parts)
             {
-                Parts.Add(num, new User(info.id, info.name));
+                Parts.Add(info.id, new User(info));
             }
+        }
+
+        public void Join(User user)
+        {
+            Parts.Add(user.Id, user);
+        }
+
+        public void Leave(int id)
+        {
+            Parts.Remove(id);
         }
     }
 
+    //数据库，包含用户信息和房间信息
     internal static class Database
     {
-        public static User Me { get; set; } = new();
+        public static User? Me { get; set; }
         public static Room? Room { get; set; }
     }
 }

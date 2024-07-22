@@ -1,4 +1,4 @@
-using client;
+using Client;
 
 namespace Client
 {
@@ -14,6 +14,8 @@ namespace Client
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new FormConnect());
+            if (Server.IsConnected)
+                Application.Run(new FormLogin());
         }
     }
 }

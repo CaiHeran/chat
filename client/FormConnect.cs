@@ -1,4 +1,3 @@
-using client;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Windows.Forms;
@@ -26,7 +25,8 @@ namespace Client
 
             try
             {
-                Server.Connect(host, port);
+                if (!Server.Connect(host, port))
+                    return;
             }
             catch (Exception ex)
             {
@@ -37,32 +37,7 @@ namespace Client
                 return;
             }
 
-            /*
-             * this.Hide();
-             * FormTest.formtest.Show();
-             */
-
-            this.Hide();
-            FormLogin.formhome.Show();
-        }
-        //
-        // button_exit_Click
-        // 
-        private void button_exit_Click(object sender, EventArgs e)
-        {
-            var result = MessageBox.Show("真的要退出吗？", "游戏标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.No) return;
-            this.Close();
-            Application.Exit();
-            Application.ExitThread();
-            Environment.Exit(0);
-        }
-        //
-        // button_mini_Click
-        //
-        private void button_mini_Click(object sender, EventArgs e)
-        {
-            this.WindowState = FormWindowState.Minimized;
+            Close();
         }
     }
 }
