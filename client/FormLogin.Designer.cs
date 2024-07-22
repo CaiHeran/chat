@@ -31,7 +31,6 @@
             Label label_yourname;
             button_login = new Button();
             textBox_name = new TextBox();
-            button_exit = new Button();
             label_yourname = new Label();
             SuspendLayout();
             // 
@@ -64,31 +63,21 @@
             textBox_name.Size = new Size(111, 29);
             textBox_name.TabIndex = 3;
             // 
-            // button_exit
-            // 
-            button_exit.Font = new Font("微软雅黑", 7.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            button_exit.Location = new Point(377, 12);
-            button_exit.Name = "button_exit";
-            button_exit.Size = new Size(75, 23);
-            button_exit.TabIndex = 5;
-            button_exit.Text = "退出";
-            button_exit.UseVisualStyleBackColor = true;
-            button_exit.Click += button_exit_Click;
-            // 
             // FormLogin
             // 
             AutoScaleDimensions = new SizeF(10F, 21F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(464, 321);
-            ControlBox = false;
-            Controls.Add(button_exit);
             Controls.Add(textBox_name);
             Controls.Add(label_yourname);
             Controls.Add(button_login);
             Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
             Margin = new Padding(4);
+            MaximizeBox = false;
             Name = "FormLogin";
-            Text = "游戏标题";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Login";
+            this.FormClosing += this.Form_Closing;
             ResumeLayout(false);
             PerformLayout();
         }
@@ -98,6 +87,5 @@
         private Button button_login;
         private Label label_yourname;
         private TextBox textBox_name;
-        private Button button_exit;
     }
 }

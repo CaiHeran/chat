@@ -25,7 +25,8 @@ namespace Client
 
         private void button_login_Click(object sender, EventArgs e)
         {
-            f = (_, info) => {
+            f = (_, info) =>
+            {
                 Login_callback();
                 new FormHome();
                 Hide();
@@ -40,14 +41,21 @@ namespace Client
             Process.Login -= f;
         }
 
-        private void button_exit_Click(object sender, EventArgs e)
+        private void Form_Closing(object sender, FormClosingEventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.No) return;
-            this.Close();
-            Application.Exit();
-            Application.ExitThread();
-            Environment.Exit(0);
+            var result = MessageBox.Show("真的要退出吗？", "Login", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+            if (result == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
+            }
+            else
+            {
+                e.Cancel = false;
+                Application.Exit();
+                Application.ExitThread();
+                Environment.Exit(0);
+            }
         }
     }
 }

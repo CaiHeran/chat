@@ -12,12 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Properties\五子棋\**" />
-    <EmbeddedResource Remove="Properties\五子棋\**" />
-    <None Remove="Properties\五子棋\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.10.48" />
   </ItemGroup>
 

@@ -20,7 +20,12 @@ namespace Client
 {
     internal static class Server
     {
-        private static SslStream stream;
+        private static SslStream? stream;
+        public static bool IsConnected {
+            get {
+                return stream != null;
+            }
+        }
         private static AsyncQueue<string> messages = new();                           // 消息队列
         public static bool Connect(string host, int port)                             // 连接服务器，参数为服务器和端口
         {

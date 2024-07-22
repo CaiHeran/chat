@@ -144,7 +144,7 @@
             ControlBox = false;
             Controls.Add(panel_background);
             Name = "FormChatRoom";
-            Text = "FormRoom";
+            Text = "ChatRoom";
             Load += FormChatRoom_Load;
             ((System.ComponentModel.ISupportInitialize)errorProvider_send).EndInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView_list).EndInit();

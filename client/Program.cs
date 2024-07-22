@@ -14,7 +14,8 @@ namespace Client
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new FormConnect());
-            Application.Run(new FormLogin());
+            if (Server.IsConnected)
+                Application.Run(new FormLogin());
         }
     }
 }

@@ -63,8 +63,8 @@ namespace Client
                 label_tip.Visible = true;
                 return;
             }
-            
-            fj = (_, msg) =>
+
+            Process.Myjoinroom += fj = (_, msg) =>
             {
                 if (msg.ec != 0)
                 {
@@ -84,7 +84,6 @@ namespace Client
                     FormChatRoom.form!.Show();
                 }
             };
-            Process.Myjoinroom += fj;
             Functions.JoinRoom(int.Parse(textBox_roomid.Text));
         }
         private void Joinroom_Callback()
@@ -92,14 +91,22 @@ namespace Client
             Process.Myjoinroom -= fj;
         }
 
-        private void button_exit_Click(object sender, EventArgs e)
+        private void Form_Closing(object sender, FormClosingEventArgs e)
         {
-            var result = MessageBox.Show("真的要退出吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.No) return;
-            this.Close();
-            Application.Exit();
-            Application.ExitThread();
-            Environment.Exit(0);
+            var result = MessageBox.Show("真的要关闭吗？", "Home Menu", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+            MessageBox.Show($"Your res: {result}");
+            if (result == DialogResult.OK)
+            {
+                e.Cancel = true;
+                return;
+            }
+            else
+            {
+                e.Cancel = false;
+                Application.Exit();
+                Application.ExitThread();
+                Environment.Exit(0);
+            }
         }
     }
 }
