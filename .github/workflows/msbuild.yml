@@ -61,6 +61,10 @@ jobs:
           setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" `
           -Source "${{ env.FEED_URL }}" `
 
+    - name:  Install vcpkg packages
+      shell: pwsh
+      run: ${{ github.workspace }}/.github/workflows/vcpkg-install.bat
+
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
