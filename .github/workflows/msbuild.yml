@@ -26,6 +26,12 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    
+    env: 
+      USERNAME: CaiHeran
+      VCPKG_EXE: ${{ github.workspace }}/vcpkg/vcpkg
+      FEED_URL: https://nuget.pkg.github.com/CaiHeran/index.json
+      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/CaiHeran/index.json,readwrite"
 
     steps:
     - uses: actions/checkout@v4
@@ -33,9 +39,27 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
+    - name: Bootstrap vcpkg
+      shell: pwsh
+      run: ${{ github.workspace }}/.github/workflows/vcpkg.bat
+
     - name: Restore NuGet packages
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+    - name: Add NuGet sources
+      shell: pwsh
+      run: |
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          sources add `
+          -Source "${{ env.FEED_URL }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.USERNAME }}" `
+          -Password "${{ secrets.GH_PACKAGES_TOKEN }}"
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          setapikey "${{ secrets.GH_PACKAGES_TOKEN }}" `
+          -Source "${{ env.FEED_URL }}" `
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
