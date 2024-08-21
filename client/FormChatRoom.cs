@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -28,20 +29,26 @@ namespace Client
         }
         public void FormChatRoom_Load(object sender, EventArgs e)
         {
-            Process.Otherjoinroom += (_, msg) =>
+            // Otherjoinroom
+            Process.Register(21, (_, json) =>
             {
+                var msg = JsonSerializer.Deserialize<OtherJoinRoom>(json, new JsonSerializerOptions{IncludeFields=true})!;
                 // TODO check msg.room
                 Grid_AddData(msg.info);
-            };
-            Process.Roommessage += (_, msg) =>
+            });
+            // Roommessage
+            Process.Register(22, (_, json) =>
             {
+                var msg = JsonSerializer.Deserialize<RoomMessage>(json, new JsonSerializerOptions{IncludeFields=true})!;
                 Add_text($"{DB.Room.Parts[msg.id].Name}: {msg.message}");
-            };
-            Process.Leaveroom += (_, msg) =>
+            });
+            // Leaveroom
+            Process.Register(23, (_, msg) =>
             {
-                Grid_DelData(msg.id);
-                DB.Room!.Leave(msg.id);
-            };
+                int id = (int)msg["id"]!;
+                Grid_DelData(id);
+                DB.Room!.Leave(id);
+            });
             Grid_Load();
             label_roomid.Text = $"房间号：{DB.Room.Id}";
         }
@@ -95,7 +102,7 @@ namespace Client
         // richTextBox_view
         internal void Add_text(string text)
         {
-             richTextBox_view.AppendText(text + "\n");
+            richTextBox_view.AppendText(text + '\n');
             return;
         }
         //
@@ -118,6 +125,9 @@ namespace Client
             var result = MessageBox.Show("真的要退出房间吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.No) return;
             Functions.LeaveRoom(DB.Room!.Id);
+            Process.Clear(21);
+            Process.Clear(22);
+            Process.Clear(23);
             DB.Room = null;
             form = null;
             this.Close();

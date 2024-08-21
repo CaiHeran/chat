@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -21,7 +20,7 @@ namespace Client
             InitializeComponent();
         }
 
-        EventHandler<Login>? f;
+        EventHandler<JsonNode?>? f;
 
         private void button_login_Click(object sender, EventArgs e)
         {
@@ -32,13 +31,14 @@ namespace Client
                 Hide();
                 FormHome.form!.Show();
             };
-            Process.Login += f;
+            //Process.Login += f;
+            Process.Register(1, f);
             Functions.Login(textBox_name.Text);
         }
 
         public void Login_callback()
         {
-            Process.Login -= f;
+            Process.Unregister(1, f);
         }
 
         private void Form_Closing(object sender, FormClosingEventArgs e)

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -12,6 +12,7 @@ using Info;
 
 namespace Client
 {
+    using static System.Windows.Forms.Design.AxImporter;
     using DB = Database;
 
     public partial class FormHome : Form
@@ -27,23 +28,23 @@ namespace Client
             label_name.Text = $"Name: {DB.Me.Name}";
         }
 
-        EventHandler<RoomCreate>? fc;
-        EventHandler<MyJoinRoom>? fj;
+        EventHandler<JsonNode?>? fc;
+        EventHandler<JsonNode?>? fj;
 
         private void button_CreateRoom_Click(object sender, EventArgs e)
         {
-            fc = (_, info) =>
+            //Process.Roomcreate += fc;
+            Process.Register(20, fc = (_, info) =>
             {
                 Createroom_Callback();
                 this.Hide();
                 new FormChatRoom().Show();
-            };
-            Process.Roomcreate += fc;
+            });
             Functions.CreateRoom();
         }
         private void Createroom_Callback()
         {
-            Process.Roomcreate -= fc;
+            Process.Unregister(20, fc);
         }
 
         private void button_JoinRoom_Click(object sender, EventArgs e)
@@ -64,8 +65,9 @@ namespace Client
                 return;
             }
 
-            Process.Myjoinroom += fj = (_, msg) =>
+            Process.Register(21, fj = (_, json) =>
             {
+                var msg = JsonSerializer.Deserialize<MyJoinRoom>(json, new JsonSerializerOptions{IncludeFields=true})!;
                 if (msg.ec != 0)
                 {
                     errorProvider_join.SetError(button_JoinRoom, "房间号无效");
@@ -83,19 +85,18 @@ namespace Client
                     Hide();
                     FormChatRoom.form!.Show();
                 }
-            };
+            });
             Functions.JoinRoom(int.Parse(textBox_roomid.Text));
         }
         private void Joinroom_Callback()
         {
-            Process.Myjoinroom -= fj;
+            Process.Unregister(21, fj);
         }
 
         private void Form_Closing(object sender, FormClosingEventArgs e)
         {
             var result = MessageBox.Show("真的要关闭吗？", "Home Menu", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
-            MessageBox.Show($"Your res: {result}");
-            if (result == DialogResult.OK)
+            if (result == DialogResult.Cancel)
             {
                 e.Cancel = true;
                 return;
