@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-using Info;
 
 namespace Client
 {
@@ -17,6 +13,7 @@ namespace Client
 
     public partial class FormHome : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public static FormHome? form { get; set; }
 
         public FormHome()
@@ -28,26 +25,20 @@ namespace Client
             label_name.Text = $"Name: {DB.Me.Name}";
         }
 
-        EventHandler<JsonNode?>? fc;
-        EventHandler<JsonNode?>? fj;
-
-        private void button_CreateRoom_Click(object sender, EventArgs e)
+        private async void button_CreateRoom_Click(object sender, EventArgs e)
         {
-            //Process.Roomcreate += fc;
-            Process.Register(20, fc = (_, info) =>
+            JsonNode res = await Requests.CreateRoomAsync();
+            if (res["errors"] != null)
             {
-                Createroom_Callback();
-                this.Hide();
-                new FormChatRoom().Show();
-            });
-            Functions.CreateRoom();
-        }
-        private void Createroom_Callback()
-        {
-            Process.Unregister(20, fc);
+                MessageBox.Show("创建房间失败", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            DB.Room = new Room(res["roomid"]!.GetValue<int>());
+            this.Hide();
+            new FormChatRoom(DB.Room).Show();
         }
 
-        private void button_JoinRoom_Click(object sender, EventArgs e)
+        private async void button_JoinRoom_Click(object sender, EventArgs e)
         {
             if (textBox_roomid.Text == "")
             {
@@ -65,32 +56,23 @@ namespace Client
                 return;
             }
 
-            Process.Register(21, fj = (_, json) =>
+            JsonNode res = await Requests.JoinRoomAsync(int.Parse(textBox_roomid.Text));
+
+            if (res["errors"] != null)
             {
-                var msg = JsonSerializer.Deserialize<MyJoinRoom>(json, new JsonSerializerOptions{IncludeFields=true})!;
-                if (msg.ec != 0)
-                {
-                    errorProvider_join.SetError(button_JoinRoom, "房间号无效");
-                    label_tip.Text = "房间号无效";
-                    label_tip.Visible = true;
-                    return;
-                }
-                else
-                {
-                    Joinroom_Callback();
-                    label_tip.Visible = false;
-                    errorProvider_join.Clear();
-                    DB.Room = new(msg.room, msg.list); //无异常，加入房间
-                    new FormChatRoom();
-                    Hide();
-                    FormChatRoom.form!.Show();
-                }
-            });
-            Functions.JoinRoom(int.Parse(textBox_roomid.Text));
-        }
-        private void Joinroom_Callback()
-        {
-            Process.Unregister(21, fj);
+                errorProvider_join.SetError(button_JoinRoom, "房间号无效");
+                label_tip.Text = "房间号无效 " + res["errors"].GetValue<string>();
+                label_tip.Visible = true;
+                return;
+            }
+            else
+            {
+                label_tip.Visible = false;
+                errorProvider_join.Clear();
+                DB.Room = new(res);
+                Hide();
+                new FormChatRoom(DB.Room).Show();
+            }
         }
 
         private void Form_Closing(object sender, FormClosingEventArgs e)

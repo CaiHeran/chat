@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-using Info;
 
 namespace Client
 {
@@ -18,39 +13,49 @@ namespace Client
 
     internal partial class FormChatRoom : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         internal static FormChatRoom? form { get; set; }
+
+        private readonly Room room;
         //
         // Forms
         // FormChatRoom
-        public FormChatRoom()
+        public FormChatRoom(Room room)
         {
             InitializeComponent();
             form = this;
+            this.room = room;
         }
         public void FormChatRoom_Load(object sender, EventArgs e)
         {
             // Otherjoinroom
-            Process.Register(21, (_, json) =>
+            Process.Register(21, (json) =>
             {
-                var msg = JsonSerializer.Deserialize<OtherJoinRoom>(json, new JsonSerializerOptions{IncludeFields=true})!;
-                // TODO check msg.room
-                Grid_AddData(msg.info);
+                // TODO check json["roomid"]
+                JsonNode userinfo = json["info"]!;
+                int userid = userinfo["id"]!.GetValue<int>();
+                if (userid == DB.Me!.Id)
+                    return;
+                room.Join(new User(userinfo));
+                Grid_AddData(new User(userid, userinfo["name"]!.GetValue<string>()));
             });
             // Roommessage
-            Process.Register(22, (_, json) =>
+            Process.Register(22, (json) =>
             {
-                var msg = JsonSerializer.Deserialize<RoomMessage>(json, new JsonSerializerOptions{IncludeFields=true})!;
-                Add_text($"{DB.Room.Parts[msg.id].Name}: {msg.message}");
+                // TODO check json["roomid"]
+                int userid = json["userid"]!.GetValue<int>();
+                string message = json["message"]!.GetValue<string>();
+                Add_text($"{room.Parts[userid].Name}: {message}");
             });
             // Leaveroom
-            Process.Register(23, (_, msg) =>
+            Process.Register(29, (json) =>
             {
-                int id = (int)msg["id"]!;
+                int id = json["userid"]!.GetValue<int>();
                 Grid_DelData(id);
-                DB.Room!.Leave(id);
+                room.Leave(id);
             });
             Grid_Load();
-            label_roomid.Text = $"房间号：{DB.Room.Id}";
+            label_roomid.Text = $"房间号：{room.Id}";
         }
         //
         // dataGrid_View
@@ -72,20 +77,16 @@ namespace Client
         private void Grid_Load()
         {
             Grid_Init();
-            foreach ((int num, User userinfo) in DB.Room.Parts)
-                Grid_AddData(num, userinfo);
+            foreach ((int id, User userinfo) in room.Parts)
+                Grid_AddData(userinfo);
         }
-        internal void Grid_AddData(UserBriefInfo info)
-        {
-            Grid_AddData(info.id, new User(info));
-        }
-        internal void Grid_AddData(int id, User userinfo)
+        internal void Grid_AddData(User userinfo)
         {
             // todo:首先判断数据是否异常
             int cnt = dataGridView_list.Rows.Count;                         // 得到总行数
             dataGridView_list.Rows.Insert(cnt);                          // 准备向下一行插入一行数据
-            dataGridView_list.Rows[cnt].Cells[0].Value = id;
-            dataGridView_list.Rows[cnt].Cells[1].Value = $"{userinfo.Name}";
+            dataGridView_list.Rows[cnt].Cells[0].Value = userinfo.Id;
+            dataGridView_list.Rows[cnt].Cells[1].Value = userinfo.Name;
             dataGridView_list.ClearSelection();                             // 去除选择
         }
         internal void Grid_DelData(int id)
@@ -108,7 +109,7 @@ namespace Client
         //
         // buttons
         // button_send
-        private void button_send_Click(object sender, EventArgs e)
+        private async void button_send_Click(object sender, EventArgs e)
         {
             if(richTextBox_input.Text.Length == 0)
             {
@@ -118,13 +119,16 @@ namespace Client
             errorProvider_send.Clear();
             string msg = richTextBox_input.Text;
             richTextBox_input.Text = "";
-            Functions.SendMessage(msg);
+            JsonNode res = await Requests.SendRoomMessageAsync(msg);
+            if (res["errors"] == null)
+                return;
+            MessageBox.Show(res["errors"].GetValue<string>());
         }
-        private void button_exit_Click(object sender, EventArgs e)
+        private async void button_exit_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("真的要退出房间吗？", "标题", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result == DialogResult.No) return;
-            Functions.LeaveRoom(DB.Room!.Id);
+            await Requests.LeaveRoomAsync(room.Id);
             Process.Clear(21);
             Process.Clear(22);
             Process.Clear(23);
@@ -154,7 +158,7 @@ namespace Client
                         FormUserData.form.Close();
                 }
                 int id = (int)dataGridView_list[0, row].Value;        // 获取id
-                string name = DB.Room.Parts[id].Name;
+                string name = room.Parts[id].Name;
 
                 var r = dataGridView_list.GetCellDisplayRectangle(0, row, false);
                 Point p = this.Location + (Size)dataGridView_list.Location;

@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.ComponentModel;
 
 namespace Client
 {
     public partial class FormUserData : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         internal static FormUserData? form { get; set; }
 
         internal int RowIndex;       // 用于与FormChatRoom核对数据，以确定是否需要更新

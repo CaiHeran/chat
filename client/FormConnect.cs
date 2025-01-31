@@ -18,14 +18,14 @@ namespace Client
         // buttons
         // button_connect
         //
-        private void button_connect_Click(object sender, EventArgs ea)
+        private async void button_connect_Click(object sender, EventArgs ea)
         {
             string host = textBox_host.Text;
             int port = int.Parse(textBox_port.Text);
 
             try
             {
-                if (!Server.Connect(host, port))
+                if (!await Server.ConnectAsync(host, port))
                     return;
             }
             catch (Exception ex)

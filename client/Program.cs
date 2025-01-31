@@ -1,5 +1,3 @@
-using Client;
-
 namespace Client
 {
     internal static class Program

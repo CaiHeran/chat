@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-
-using Info;
 
 namespace Client
 {
@@ -22,10 +21,10 @@ namespace Client
             Id = id;
             Name = name;
         }
-        public User(UserBriefInfo info)
+        public User(JsonNode json)
         {
-            Id = info.id;
-            Name = info.name;
+            Id = json["id"]!.GetValue<int>();
+            Name = json["name"]!.GetValue<string>();
         }
 
         public void SetId(int id) => Id = id;
@@ -36,6 +35,7 @@ namespace Client
     internal class Room
     {
         public int Id { get; private set; }
+        // public string Name { get; private set; }
         // 成员列表: id -> user
         public Dictionary<int, User> Parts { get; private set; } = [];
 
@@ -46,12 +46,12 @@ namespace Client
             Parts.Add(DB.Me.Id, DB.Me);
         }
         // 加入房间时构造
-        public Room(int id, List<UserBriefInfo> parts)
+        public Room(JsonNode json)
         {
-            Id = id;
-            foreach (var info in parts)
+            Id = json["roomid"]!.GetValue<int>();
+            foreach (JsonNode part in json["parts"]!.AsArray())
             {
-                Parts.Add(info.id, new User(info));
+                Parts.Add(part["id"]!.GetValue<int>(), new User(part));
             }
         }
 
