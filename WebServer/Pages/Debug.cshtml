@@ -1,0 +1,188 @@
+@page
+@model WebServer.Pages.DebugModel
+@{
+    ViewData["Title"] = "Database Debug";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <h1>🔍 InMemory Database Debug Panel</h1>
+    
+    <div class="alert alert-warning">
+        <strong>⚠️ Debug Mode Only:</strong> This page is only available in development environment.
+    </div>
+
+    <!-- Database Summary -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>📊 Database Summary</h3>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Users</h5>
+                            <h2>@Model.Summary.UsersCount</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Rooms</h5>
+                            <h2>@Model.Summary.RoomsCount</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Messages</h5>
+                            <h2>@Model.Summary.MessagesCount</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Active Members</h5>
+                            <h2>@Model.Summary.ActiveMembersCount</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>🔧 API Debug Endpoints</h3>
+            <div class="list-group">
+                <a href="/api/debug/database-info" class="list-group-item list-group-item-action" target="_blank">
+                    <strong>Database Info:</strong> /api/debug/database-info
+                </a>
+                <a href="/api/debug/rooms" class="list-group-item list-group-item-action" target="_blank">
+                    <strong>All Rooms:</strong> /api/debug/rooms
+                </a>
+                <a href="/api/debug/messages" class="list-group-item list-group-item-action" target="_blank">
+                    <strong>Recent Messages:</strong> /api/debug/messages
+                </a>
+                <a href="/api/debug/users" class="list-group-item list-group-item-action" target="_blank">
+                    <strong>All Users:</strong> /api/debug/users
+                </a>
+                <a href="/api/debug/room-members" class="list-group-item list-group-item-action" target="_blank">
+                    <strong>Room Members:</strong> /api/debug/room-members
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rooms Details -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>🏠 Rooms Details</h3>
+            @if (Model.Rooms.Any())
+            {
+                @foreach (var room in Model.Rooms)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>
+                                @room.Name (@room.Id)
+                                <small class="text-muted">Created: @room.CreatedAt.ToString("g")</small>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Description:</strong> @(room.Description ?? "No description")<br />
+                                    <strong>Creator:</strong> @(room.Creator?.UserName ?? "Unknown")<br />
+                                    <strong>Messages Count:</strong> @room.Messages.Count<br />
+                                    <strong>Active Members:</strong> @room.Members.Count(m => m.IsActive)
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Members:</strong>
+                                    <ul class="list-unstyled">
+                                        @foreach (var member in room.Members.Where(m => m.IsActive))
+                                        {
+                                            <li>• @(member.User?.UserName ?? "Unknown") <small class="text-muted">(joined: @member.JoinedAt.ToString("g"))</small></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                            <a href="/api/debug/room/@room.Id" class="btn btn-sm btn-outline-primary" target="_blank">View JSON</a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info">No rooms found in database.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Recent Messages -->
+    <div class="row">
+        <div class="col-md-12">
+            <h3>💬 Recent Messages</h3>
+            @if (Model.RecentMessages.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Room</th>
+                                <th>Sender</th>
+                                <th>Message</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var message in Model.RecentMessages)
+                            {
+                                <tr>
+                                    <td>@message.Time.ToString("g")</td>
+                                    <td>@(message.Room?.Name ?? "Unknown")</td>
+                                    <td>@(message.Sender?.UserName ?? "Unknown")</td>
+                                    <td>@message.Content</td>
+                                    <td>
+                                        @switch (message.Type)
+                                        {
+                                            case 0:
+                                                <span class="badge bg-primary">Text</span>
+                                                break;
+                                            case 1:
+                                                <span class="badge bg-secondary">System</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-light text-dark">@message.Type</span>
+                                                break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">No messages found in database.</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 自动刷新页面数据
+        setInterval(() => {
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.click();
+            }
+        }, 30000); // 30 seconds
+    </script>
+}

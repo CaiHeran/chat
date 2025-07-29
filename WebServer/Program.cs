@@ -9,7 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 配置内存数据库
 builder.Services.AddDbContext<ChatDbContext>(options =>
-    options.UseInMemoryDatabase("ChatDatabase"));
+{
+    options.UseInMemoryDatabase("ChatDatabase");
+    
+    // 在开发环境启用敏感数据日志记录
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+        // 记录数据库操作到控制台
+        options.LogTo(Console.WriteLine, LogLevel.Information);
+    }
+});
 
 // 配置身份验证
 builder.Services.AddDefaultIdentity<WebServer.Areas.Identity.Data.AppUser>(options => 
@@ -48,6 +59,49 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// 添加定期数据库状态日志（修复后的版本）
+if (app.Environment.IsDevelopment())
+{
+    _ = Task.Run(async () =>
+    {
+        while (!app.Lifetime.ApplicationStopping.IsCancellationRequested)
+        {
+            try
+            {
+                // 每次都创建新的 scope 来避免已释放的 ServiceProvider 问题
+                using var scope = app.Services.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+                await LogDatabaseStatusAsync(context);
+                
+                await Task.Delay(TimeSpan.FromMinutes(5), app.Lifetime.ApplicationStopping);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("📊 Database status logging stopped.");
+                break;
+            }
+            catch (ObjectDisposedException)
+            {
+                Console.WriteLine("📊 Database status logging stopped due to application shutdown.");
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error logging database status: {ex.Message}");
+                // 等待一段时间后重试，避免连续错误
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), app.Lifetime.ApplicationStopping);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
+        }
+    });
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -80,6 +134,8 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
     // 检查是否已有数据
     if (context.Rooms.Any()) return;
     
+    Console.WriteLine("🌱 Starting seed data creation...");
+    
     // 创建测试用户
     var testUser = new AppUser
     {
@@ -91,6 +147,8 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
     var result = await userManager.CreateAsync(testUser, "Test123!");
     if (result.Succeeded)
     {
+        Console.WriteLine($"✅ Test user created: {testUser.Email}");
+        
         // 创建测试房间
         var room1 = new Room
         {
@@ -110,6 +168,7 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
         
         context.Rooms.AddRange(room1, room2);
         await context.SaveChangesAsync();
+        Console.WriteLine($"✅ Rooms created: {room1.Id}, {room2.Id}");
         
         // 创建房间成员记录
         var member1 = new RoomMember
@@ -152,9 +211,54 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
         context.Messages.AddRange(message1, message2);
         await context.SaveChangesAsync();
         
-        Console.WriteLine("Seed data created successfully!");
-        Console.WriteLine($"Test user: {testUser.Email} / Test123!");
-        Console.WriteLine($"Room 1 ID: {room1.Id}");
-        Console.WriteLine($"Room 2 ID: {room2.Id}");
+        Console.WriteLine("✅ Seed data created successfully!");
+        Console.WriteLine($"📧 Test user: {testUser.Email} / Test123!");
+        Console.WriteLine($"🏠 Room 1 ID: {room1.Id} - {room1.Name}");
+        Console.WriteLine($"🏠 Room 2 ID: {room2.Id} - {room2.Name}");
+        Console.WriteLine($"💬 Messages added: {context.Messages.Count()}");
+        Console.WriteLine($"👥 Active members: {context.RoomMembers.Count(rm => rm.IsActive)}");
+    }
+    else
+    {
+        Console.WriteLine($"❌ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+    }
+}
+
+// 数据库状态日志方法
+async Task LogDatabaseStatusAsync(ChatDbContext context)
+{
+    try
+    {
+        var stats = new
+        {
+            Users = await context.Users.CountAsync(),
+            Rooms = await context.Rooms.CountAsync(),
+            Messages = await context.Messages.CountAsync(),
+            ActiveMembers = await context.RoomMembers.CountAsync(rm => rm.IsActive),
+            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        };
+        
+        Console.WriteLine($"📊 [Database Status @ {stats.Timestamp}] Users: {stats.Users}, Rooms: {stats.Rooms}, Messages: {stats.Messages}, Active Members: {stats.ActiveMembers}");
+        
+        // 显示最近的活动
+        var recentMessages = await context.Messages
+            .Include(m => m.Sender)
+            .Include(m => m.Room)
+            .OrderByDescending(m => m.Time)
+            .Take(3)
+            .ToListAsync();
+            
+        if (recentMessages.Any())
+        {
+            Console.WriteLine("💬 Recent Messages:");
+            foreach (var msg in recentMessages)
+            {
+                Console.WriteLine($"   [{msg.Time:HH:mm:ss}] {msg.Sender?.UserName} in {msg.Room?.Name}: {msg.Content}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error getting database status: {ex.Message}");
     }
 }
