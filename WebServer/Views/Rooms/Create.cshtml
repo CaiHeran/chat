@@ -1,0 +1,37 @@
+﻿@model WebServer.Models.CreateRoomModel
+@{
+    ViewData["Title"] = "Create a Room";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2>Create a New Room</h2>
+
+            <form asp-controller="Rooms" asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Name" class="form-label">Room Name</label>
+                    <input asp-for="Name" type="text" class="form-control" placeholder="Enter room name" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Description" class="form-label">Description (Optional)</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter room description"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Create Room</button>
+                    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

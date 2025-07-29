@@ -1,0 +1,53 @@
+﻿@model List<WebServer.Models.Room>
+@{
+    ViewData["Title"] = "Chat Rooms";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Chat Rooms</h2>
+            
+            <div class="mb-3">
+                <a href="@Url.Action("Create", "Rooms")" class="btn btn-primary">Create New Room</a>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="row">
+                    @foreach (var room in Model)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">@room.Name</h5>
+                                    @if (!string.IsNullOrEmpty(room.Description))
+                                    {
+                                        <p class="card-text">@room.Description</p>
+                                    }
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            Created: @room.CreatedAt.ToString("g")
+                                            <br />
+                                            Members: @(room.Members?.Count(m => m.IsActive) ?? 0)
+                                        </small>
+                                    </p>
+                                    <a href="@Url.Action("Index", "Room", new { roomid = room.Id })" class="btn btn-success">
+                                        Enter Room
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h4>No rooms available</h4>
+                    <p>There are currently no chat rooms. <a href="@Url.Action("Create", "Rooms")">Create the first one!</a></p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

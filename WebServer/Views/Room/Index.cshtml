@@ -1,0 +1,236 @@
+﻿@model RoomViewModel
+@{
+    ViewData["Title"] = Model.Name;
+}
+<h3>Room: @Model.Name (@Model.Id)</h3>
+
+@if ((bool?)ViewData["IsInRoom"] == false)
+{
+    <div class="alert alert-info">
+        <p>您还未加入此房间。<button id="joinRoomBtn" class="btn btn-primary btn-sm">加入房间</button></p>
+    </div>
+}
+
+<div id="messagesListContainer" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; height: 300px; overflow-y: scroll;">
+    <h4>Messages:</h4>
+    <ul id="messagesUl">
+        @if (Model.Messages != null && Model.Messages.Any())
+        {
+            @foreach (var message in Model.Messages.OrderBy(m => m.Time))
+            {
+                <li>
+                    <strong>@message.SenderName</strong>
+                    <span style="font-size: 0.8em; color: #777;">(@message.Time.ToLocalTime().ToString("g"))</span>:
+                    <p style="margin-left: 10px; margin-top: 0; margin-bottom: 5px;">@message.Content</p>
+                </li>
+            }
+        }
+        else
+        {
+            <li id="noMessagesLi">No messages in this room yet.</li>
+        }
+    </ul>
+</div>
+
+@if ((bool?)ViewData["IsInRoom"] == true)
+{
+    <hr />
+    <h4>Send a new message:</h4>
+    <form id="sendMessageForm">
+        <div class="form-group mb-3">
+            <label for="messageInput">Message:</label>
+            <textarea id="messageInput" class="form-control" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Send</button>
+            <button type="button" id="leaveRoomBtn" class="btn btn-secondary ms-2">Leave Room</button>
+        </div>
+    </form>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger mt-2">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const roomId = "@Model.Id";
+            const messageInput = document.getElementById('messageInput');
+            const messagesUl = document.getElementById('messagesUl');
+            const messagesListContainer = document.getElementById('messagesListContainer');
+            const noMessagesLi = document.getElementById('noMessagesLi');
+            const joinRoomBtn = document.getElementById('joinRoomBtn');
+            const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+            const sendMessageForm = document.getElementById('sendMessageForm');
+            
+            let isInRoom = @((bool?)ViewData["IsInRoom"] == true ? "true" : "false");
+
+            // 创建 SignalR 连接
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // 格式化时间戳
+            function formatTimestamp(timestamp) {
+                return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+
+            // 将新消息附加到列表的函数
+            function appendMessage(user, message, timestamp) {
+                if (noMessagesLi) {
+                    noMessagesLi.style.display = 'none';
+                }
+
+                const li = document.createElement("li");
+                const strong = document.createElement("strong");
+                strong.textContent = user;
+
+                const timeSpan = document.createElement("span");
+                timeSpan.style.fontSize = "0.8em";
+                timeSpan.style.color = "#777";
+                timeSpan.textContent = ` (${formatTimestamp(timestamp)})`;
+
+                const p = document.createElement("p");
+                p.style.marginLeft = "10px";
+                p.style.marginTop = "0";
+                p.style.marginBottom = "5px";
+                p.textContent = message;
+
+                li.appendChild(strong);
+                li.appendChild(timeSpan);
+                li.appendChild(document.createTextNode(": "));
+                li.appendChild(p);
+                messagesUl.appendChild(li);
+
+                messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+            }
+
+            // SignalR 事件处理
+            connection.on("ReceiveMessage", (user, message, timestamp) => {
+                appendMessage(user, message, timestamp);
+            });
+
+            connection.on("UserJoined", (userName, timestamp) => {
+                appendMessage("System", `${userName} joined the room`, timestamp);
+            });
+
+            connection.on("UserLeft", (userName, timestamp) => {
+                appendMessage("System", `${userName} left the room`, timestamp);
+            });
+
+            connection.on("Error", (errorMessage) => {
+                alert("Error: " + errorMessage);
+            });
+
+            // 启动连接
+            async function startConnection() {
+                try {
+                    await connection.start();
+                    console.log("SignalR Connected.");
+                    if (isInRoom) {
+                        await connection.invoke("AddToRoom", roomId);
+                        console.log(`Joined room: ${roomId}`);
+                    }
+                } catch (err) {
+                    console.error("SignalR Connection Error: ", err);
+                    setTimeout(startConnection, 5000);
+                }
+            }
+
+            connection.onclose(async () => {
+                console.log("SignalR connection closed. Attempting to reconnect...");
+                await startConnection();
+            });
+
+            startConnection();
+
+            // 加入房间按钮
+            if (joinRoomBtn) {
+                joinRoomBtn.addEventListener('click', async () => {
+                    try {
+                        const response = await fetch(`/Room/JoinRoom`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                            },
+                            body: JSON.stringify({ roomId: parseInt(roomId) })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            location.reload(); // 重新加载页面以更新UI
+                        } else {
+                            alert('Failed to join room: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error joining room:', error);
+                        alert('Error joining room');
+                    }
+                });
+            }
+
+            // 离开房间按钮
+            if (leaveRoomBtn) {
+                leaveRoomBtn.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to leave this room?')) {
+                        try {
+                            const response = await fetch(`/Room/LeaveRoom`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                                },
+                                body: JSON.stringify({ roomId: parseInt(roomId) })
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                window.location.href = '/Rooms';
+                            } else {
+                                alert('Failed to leave room');
+                            }
+                        } catch (error) {
+                            console.error('Error leaving room:', error);
+                            alert('Error leaving room');
+                        }
+                    }
+                });
+            }
+
+            // 发送消息表单
+            if (sendMessageForm) {
+                sendMessageForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const message = messageInput.value.trim();
+                    if (!message) return;
+
+                    if (connection.state === signalR.HubConnectionState.Connected) {
+                        try {
+                            await connection.invoke("SendMessageToRoom", roomId, message);
+                            messageInput.value = "";
+                            messageInput.focus();
+                        } catch (err) {
+                            console.error("Error sending message via SignalR: ", err);
+                            alert("Error sending message. Please try again.");
+                        }
+                    } else {
+                        alert("Not connected to chat server. Please wait or refresh.");
+                    }
+                });
+            }
+
+            // 页面加载时滚动到底部
+            if (messagesUl.children.length > 0 && (!noMessagesLi || noMessagesLi.style.display === 'none')) {
+                messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+            }
+        });
+    </script>
+}
