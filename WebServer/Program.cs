@@ -4,6 +4,8 @@ using WebServer.Data;
 using WebServer.Services;
 using WebServer.Areas.Identity.Data;
 using WebServer.Models;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +36,21 @@ builder.Services.AddDefaultIdentity<WebServer.Areas.Identity.Data.AppUser>(optio
     options.Password.RequiredLength = 3;
 })
 .AddEntityFrameworkStores<ChatDbContext>();
+
+// 配置认证 Cookie 选项
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        // 开发环境：更短的过期时间
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = false;
+    }
+    
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
 
 // 添加服务
 builder.Services.AddControllersWithViews(); 
@@ -116,6 +133,34 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 开发环境：添加用户验证中间件
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                using var scope = app.Services.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+                var userExists = await dbContext.Users.AnyAsync(u => u.Id == userId);
+                
+                if (!userExists)
+                {
+                    Console.WriteLine($"⚠️ Invalidating stale authentication for user: {userId}");
+                    // 清除认证状态
+                    await context.SignOutAsync(IdentityConstants.ApplicationScheme);
+                    context.Response.Redirect("/Identity/Account/Login");
+                    return;
+                }
+            }
+        }
+        await next();
+    });
+}
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(
@@ -135,16 +180,21 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
     if (context.Rooms.Any()) return;
     
     Console.WriteLine("🌱 Starting seed data creation...");
-    
+
     // 创建测试用户
-    var testUser = new AppUser
-    {
-        UserName = "testuser@example.com",
-        Email = "testuser@example.com",
+    var testUser = new AppUser {
+        UserName = "1@test.com",
+        Email = "1@test.com",
         EmailConfirmed = true
     };
-    
-    var result = await userManager.CreateAsync(testUser, "Test123!");
+    var testUser2 = new AppUser {
+        UserName = "2@test.com",
+        Email = "2@test.com",
+        EmailConfirmed = true
+    };
+
+    var result = await userManager.CreateAsync(testUser, "Test!234");
+    await userManager.CreateAsync(testUser2, "Test!234");
     if (result.Succeeded)
     {
         Console.WriteLine($"✅ Test user created: {testUser.Email}");
@@ -212,7 +262,8 @@ async Task SeedDataAsync(ChatDbContext context, UserManager<AppUser> userManager
         await context.SaveChangesAsync();
         
         Console.WriteLine("✅ Seed data created successfully!");
-        Console.WriteLine($"📧 Test user: {testUser.Email} / Test123!");
+        Console.WriteLine($"📧 Test user 1: {testUser.Email} / Test!123");
+        Console.WriteLine($"📧 Test user 1: {testUser2.Email} / Test!123");
         Console.WriteLine($"🏠 Room 1 ID: {room1.Id} - {room1.Name}");
         Console.WriteLine($"🏠 Room 2 ID: {room2.Id} - {room2.Name}");
         Console.WriteLine($"💬 Messages added: {context.Messages.Count()}");

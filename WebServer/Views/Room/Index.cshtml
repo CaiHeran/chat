@@ -1,4 +1,5 @@
-﻿@model RoomViewModel
+﻿@using System.Security.Claims
+@model RoomViewModel
 @{
     ViewData["Title"] = Model.Name;
 }
@@ -18,10 +19,10 @@
         {
             @foreach (var message in Model.Messages.OrderBy(m => m.Time))
             {
-                <li>
+                <li class="message-item" data-message-time="@message.Time.Ticks" data-sender="@message.SenderId">
                     <strong>@message.SenderName</strong>
                     <span style="font-size: 0.8em; color: #777;">(@message.Time.ToLocalTime().ToString("g"))</span>:
-                    <p style="margin-left: 10px; margin-top: 0; margin-bottom: 5px;">@message.Content</p>
+                    <p style="margin-left: 10px; margin-top: 0; margin-bottom: 5px; white-space: pre-wrap; word-break: break-word;">@message.Content</p>
                 </li>
             }
         }
@@ -60,6 +61,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const roomId = "@Model.Id";
+            const currentUserId = "@User.FindFirstValue(ClaimTypes.NameIdentifier)";
             const messageInput = document.getElementById('messageInput');
             const messagesUl = document.getElementById('messagesUl');
             const messagesListContainer = document.getElementById('messagesListContainer');
@@ -69,6 +71,33 @@
             const sendMessageForm = document.getElementById('sendMessageForm');
             
             let isInRoom = @((bool?)ViewData["IsInRoom"] == true ? "true" : "false");
+            let lastMarkAsReadTime = Date.now();
+            let isUserScrolling = false;
+            let lastMessageTime = 0;
+
+            // 创建 Intersection Observer 用于检测消息可见性
+            let visibilityObserver = null;
+            
+            if (isInRoom) {
+                visibilityObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const messageElement = entry.target;
+                            const senderId = messageElement.dataset.sender;
+                            const messageTime = parseInt(messageElement.dataset.messageTime);
+                            
+                            // 只处理其他用户的消息
+                            if (senderId !== currentUserId && messageTime > lastMessageTime) {
+                                markMessageAsRead(messageTime);
+                            }
+                        }
+                    });
+                }, {
+                    root: messagesListContainer,
+                    rootMargin: '0px',
+                    threshold: 0.7 // 消息70%可见时才算已读
+                });
+            }
 
             // 创建 SignalR 连接
             const connection = new signalR.HubConnectionBuilder()
@@ -81,13 +110,58 @@
                 return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
 
+            // 检查用户是否在底部附近（用于判断是否自动滚动）
+            function isNearBottom() {
+                const threshold = 80; // 80px 容差
+                return messagesListContainer.scrollHeight - messagesListContainer.clientHeight - messagesListContainer.scrollTop <= threshold;
+            }
+
+            // 检查新消息是否应该触发自动滚动
+            function shouldAutoScrollToNewMessage() {
+                // 如果用户正在主动滚动，不要干扰
+                if (isUserScrolling) return false;
+                
+                // 只有当用户在底部附近时才自动滚动
+                return isNearBottom();
+            }
+
+            // 标记特定时间的消息为已读
+            function markMessageAsRead(messageTime) {
+                if (!isInRoom) return;
+                
+                const now = Date.now();
+                // 防抖：1秒内最多发送一次请求
+                if (now - lastMarkAsReadTime > 1000) {
+                    lastMarkAsReadTime = now;
+                    lastMessageTime = Math.max(lastMessageTime, messageTime);
+                    
+                    fetch('/Room/MarkAsRead', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({ roomId: parseInt(roomId) })
+                    }).catch(error => {
+                        console.error('Error marking messages as read:', error);
+                    });
+                }
+            }
+
             // 将新消息附加到列表的函数
-            function appendMessage(user, message, timestamp) {
+            function appendMessage(user, message, timestamp, senderId = null) {
+                // 在添加新消息之前，先检查用户是否在原先的底部附近
+                const wasNearBottom = shouldAutoScrollToNewMessage();
+                
                 if (noMessagesLi) {
                     noMessagesLi.style.display = 'none';
                 }
 
                 const li = document.createElement("li");
+                li.className = "message-item";
+                li.dataset.messageTime = new Date(timestamp).getTime();
+                li.dataset.sender = senderId || "unknown";
+
                 const strong = document.createElement("strong");
                 strong.textContent = user;
 
@@ -100,6 +174,9 @@
                 p.style.marginLeft = "10px";
                 p.style.marginTop = "0";
                 p.style.marginBottom = "5px";
+                p.style.whiteSpace = "pre-wrap"; // 保持换行和空格
+                p.style.wordBreak = "break-word"; // 长单词换行
+                // 使用 textContent 设置文本，浏览器会自动处理换行符
                 p.textContent = message;
 
                 li.appendChild(strong);
@@ -108,24 +185,94 @@
                 li.appendChild(p);
                 messagesUl.appendChild(li);
 
-                messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+                // 根据之前检查的结果决定是否滚动
+                if (wasNearBottom) {
+                    if (senderId === currentUserId) {
+                        // 自己的消息：滚动到底部
+                        messagesListContainer.scrollTo({
+                            top: messagesListContainer.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        // 其他人的消息：滚动到新消息的开头
+                        li.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'  // 滚动到元素的开头
+                        });
+                    }
+                }
+
+                // 为新消息设置可见性观察
+                if (isInRoom && visibilityObserver && senderId !== currentUserId) {
+                    visibilityObserver.observe(li);
+                }
+
+                // 如果消息立即可见，标记为已读
+                if (senderId !== currentUserId) {
+                    setTimeout(() => {
+                        const rect = li.getBoundingClientRect();
+                        const containerRect = messagesListContainer.getBoundingClientRect();
+                        
+                        if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom) {
+                            markMessageAsRead(new Date(timestamp).getTime());
+                        }
+                    }, 100);
+                }
             }
 
+            // 监听用户滚动状态
+            let scrollTimeout;
+            messagesListContainer.addEventListener('scroll', () => {
+                isUserScrolling = true;
+                clearTimeout(scrollTimeout);
+                // 用户停止滚动后稍等一段时间再允许自动滚动
+                scrollTimeout = setTimeout(() => {
+                    isUserScrolling = false;
+                }, 1500); // 1.5秒，比较合理的时间
+            });
+
+            // 监听用户交互，暂停自动滚动
+            messagesListContainer.addEventListener('mousedown', () => {
+                isUserScrolling = true;
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    isUserScrolling = false;
+                }, 2000); // 鼠标交互后2秒内不自动滚动
+            });
+
+            // 监听滚轮事件
+            messagesListContainer.addEventListener('wheel', () => {
+                isUserScrolling = true;
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    isUserScrolling = false;
+                }, 1500);
+            });
+
             // SignalR 事件处理
-            connection.on("ReceiveMessage", (user, message, timestamp) => {
-                appendMessage(user, message, timestamp);
+            connection.on("ReceiveMessage", (user, message, timestamp, senderId) => {
+                appendMessage(user, message, timestamp, senderId);
             });
 
             connection.on("UserJoined", (userName, timestamp) => {
-                appendMessage("System", `${userName} joined the room`, timestamp);
+                appendMessage("System", `${userName} joined the room`, timestamp, "system");
             });
 
             connection.on("UserLeft", (userName, timestamp) => {
-                appendMessage("System", `${userName} left the room`, timestamp);
+                appendMessage("System", `${userName} left the room`, timestamp, "system");
             });
 
             connection.on("Error", (errorMessage) => {
-                alert("Error: " + errorMessage);
+                console.error("SignalR Error:", errorMessage);
+                
+                // 如果是认证错误，重定向到登录页面
+                if (errorMessage.includes("Invalid user session") || 
+                    errorMessage.includes("User not authenticated")) {
+                    alert("Your session has expired. Please log in again.");
+                    window.location.href = "/Identity/Account/Logout";
+                } else {
+                    alert("Error: " + errorMessage);
+                }
             });
 
             // 启动连接
@@ -150,6 +297,16 @@
 
             startConnection();
 
+            // 初始化现有消息的可见性观察
+            if (isInRoom && visibilityObserver) {
+                document.querySelectorAll('.message-item').forEach(messageElement => {
+                    const senderId = messageElement.dataset.sender;
+                    if (senderId !== currentUserId) {
+                        visibilityObserver.observe(messageElement);
+                    }
+                });
+            }
+
             // 加入房间按钮
             if (joinRoomBtn) {
                 joinRoomBtn.addEventListener('click', async () => {
@@ -165,7 +322,7 @@
                         
                         const result = await response.json();
                         if (result.success) {
-                            location.reload(); // 重新加载页面以更新UI
+                            location.reload();
                         } else {
                             alert('Failed to join room: ' + result.message);
                         }
@@ -209,7 +366,8 @@
                 sendMessageForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
 
-                    const message = messageInput.value.trim();
+                    // 获取原始消息内容，只移除结尾空白，保留内部换行符
+                    const message = messageInput.value.replace(/\s+$/g, '');
                     if (!message) return;
 
                     if (connection.state === signalR.HubConnectionState.Connected) {
@@ -228,9 +386,35 @@
             }
 
             // 页面加载时滚动到底部
-            if (messagesUl.children.length > 0 && (!noMessagesLi || noMessagesLi.style.display === 'none')) {
-                messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+            if (isInRoom && messagesUl.children.length > 0 && (!noMessagesLi || noMessagesLi.style.display === 'none')) {
+                // 页面加载时直接滚动到底部，无动画
+                setTimeout(() => {
+                    messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+                }, 100);
             }
+
+            // 页面卸载时清理观察器
+            window.addEventListener('beforeunload', () => {
+                if (visibilityObserver) {
+                    visibilityObserver.disconnect();
+                }
+            });
         });
     </script>
 }
+
+<style>
+    .message-item {
+        transition: background-color 0.3s ease;
+    }
+    
+    .message-item.new-message {
+        background-color: #f8f9fa;
+        border-left: 3px solid #007bff;
+        padding-left: 10px;
+    }
+    
+    #messagesListContainer {
+        scroll-behavior: smooth;
+    }
+</style>

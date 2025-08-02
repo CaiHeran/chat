@@ -18,7 +18,11 @@ public class ChatHub : Hub
     public async Task SendMessageToRoom(string roomId, string message)
     {
         var userId = Context.UserIdentifier;
-        if (userId == null) return;
+        if (userId == null) 
+        {
+            await Clients.Caller.SendAsync("Error", "User not authenticated");
+            return;
+        }
 
         if (!int.TryParse(roomId, out var roomIdInt)) return;
 
@@ -38,7 +42,11 @@ public class ChatHub : Hub
     public async Task AddToRoom(string roomId)
     {
         var userId = Context.UserIdentifier;
-        if (userId == null) return;
+        if (userId == null) 
+        {
+            await Clients.Caller.SendAsync("Error", "User not authenticated");
+            return;
+        }
 
         if (!int.TryParse(roomId, out var roomIdInt)) return;
 
@@ -61,15 +69,34 @@ public class ChatHub : Hub
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
     }
 
+    // 加入全局通知组（用于接收新消息通知）
+    public async Task JoinGlobalNotifications()
+    {
+        var userId = Context.UserIdentifier;
+        if (userId != null)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
+            await Clients.Caller.SendAsync("JoinedGlobalNotifications");
+        }
+    }
+
     // 当客户端连接时调用
     public override async Task OnConnectedAsync()
     {
         var userId = Context.UserIdentifier;
         if (userId != null)
         {
-            // 可以在这里添加用户上线逻辑
-            Console.WriteLine($"User {userId} connected");
+            // 自动加入全局通知组
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
+            Console.WriteLine($"✅ User {userId} connected and joined global notifications");
         }
+        else
+        {
+            Console.WriteLine($"❌ Unauthenticated connection attempt");
+            Context.Abort(); // 终止未认证的连接
+            return;
+        }
+        
         await base.OnConnectedAsync();
     }
 
@@ -79,7 +106,6 @@ public class ChatHub : Hub
         var userId = Context.UserIdentifier;
         if (userId != null)
         {
-            // 可以在这里添加用户下线逻辑
             Console.WriteLine($"User {userId} disconnected");
         }
         await base.OnDisconnectedAsync(exception);

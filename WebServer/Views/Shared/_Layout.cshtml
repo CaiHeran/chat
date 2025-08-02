@@ -24,7 +24,12 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Rooms" asp-action="Index">Rooms</a>
+                            <a class="nav-link text-dark position-relative" asp-area="" asp-controller="Rooms" asp-action="Index">
+                                Rooms
+                                <span id="global-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                                    <span id="global-unread-count">0</span>
+                                </span>
+                            </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
@@ -49,6 +54,104 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- 全局 SignalR 连接和未读消息计数 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        let globalLayoutConnection = null;
+
+        async function initializeGlobalConnection() {
+            // 检查用户是否已登录
+            const isAuthenticated = document.querySelector('partial[name="_LoginPartial"]') !== null;
+            if (!isAuthenticated) return;
+
+            globalLayoutConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .configureLogging(signalR.LogLevel.Warning)
+                .build();
+
+            // 监听新消息通知
+            globalLayoutConnection.on("NewMessageNotification", (roomId, senderName, messageContent) => {
+                console.log(`Layout: New message notification from ${senderName}`);
+                updateGlobalUnreadCount();
+                
+                // 显示浏览器通知
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(`New message from ${senderName}`, {
+                        body: messageContent.length > 50 ? messageContent.substring(0, 50) + "..." : messageContent,
+                        icon: "/favicon.ico",
+                        tag: `room-${roomId}` // 防止同一房间的重复通知
+                    });
+                }
+            });
+
+            // 处理SignalR错误
+            globalLayoutConnection.on("Error", (errorMessage) => {
+                console.error("Global SignalR Error:", errorMessage);
+                
+                // 如果是认证错误，重定向到登录页面
+                if (errorMessage.includes("Invalid user session") || 
+                    errorMessage.includes("User not authenticated")) {
+                    alert("Your session has expired. Please log in again.");
+                    window.location.href = "/Identity/Account/Logout";
+                }
+            });
+
+            try {
+                await globalLayoutConnection.start();
+                console.log("Global layout SignalR connection established");
+                // 初始加载未读计数
+                updateGlobalUnreadCount();
+            } catch (err) {
+                console.error("Failed to establish global layout SignalR connection:", err);
+                setTimeout(initializeGlobalConnection, 5000);
+            }
+
+            globalLayoutConnection.onclose(async () => {
+                console.log("Global layout SignalR connection closed. Attempting to reconnect...");
+                setTimeout(initializeGlobalConnection, 5000);
+            });
+        }
+
+        // 更新全局未读计数
+        async function updateGlobalUnreadCount() {
+            try {
+                const response = await fetch('/Rooms/GetUnreadCount');
+                const data = await response.json();
+                const unreadCount = data.unreadCount || 0;
+                
+                const badge = document.getElementById('global-unread-badge');
+                const countElement = document.getElementById('global-unread-count');
+                
+                if (unreadCount > 0) {
+                    countElement.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Failed to update global unread count:', error);
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeGlobalConnection();
+            
+            // 请求浏览器通知权限
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        });
+
+        // 页面卸载时断开连接
+        window.addEventListener('beforeunload', () => {
+            if (globalLayoutConnection && globalLayoutConnection.state === signalR.HubConnectionState.Connected) {
+                globalLayoutConnection.stop();
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

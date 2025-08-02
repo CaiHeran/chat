@@ -18,7 +18,13 @@ namespace WebServer.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var rooms = await _chatService.GetRoomsAsync();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var rooms = await _chatService.GetRoomsWithUnreadCountAsync(userId);
             return View(rooms);
         }
 
@@ -82,6 +88,19 @@ namespace WebServer.Controllers
             }
 
             return RedirectToAction("Index", "Room", new { roomid = roomid });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUnreadCount()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Json(new { unreadCount = 0 });
+            }
+
+            var unreadCount = await _chatService.GetTotalUnreadCountAsync(userId);
+            return Json(new { unreadCount });
         }
     }
 }

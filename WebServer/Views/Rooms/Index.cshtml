@@ -1,4 +1,4 @@
-﻿@model List<WebServer.Models.Room>
+﻿@model List<WebServer.Models.RoomListItemViewModel>
 @{
     ViewData["Title"] = "Chat Rooms";
 }
@@ -18,23 +18,62 @@
                     @foreach (var room in Model)
                     {
                         <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card">
+                            <div class="card @(room.UnreadMessagesCount > 0 ? "border-primary" : "")">
                                 <div class="card-body">
-                                    <h5 class="card-title">@room.Name</h5>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h5 class="card-title">
+                                            @room.Name
+                                            @if (room.UnreadMessagesCount > 0)
+                                            {
+                                                <span class="badge bg-danger ms-2" title="Unread messages">
+                                                    @room.UnreadMessagesCount
+                                                </span>
+                                            }
+                                        </h5>
+                                        @if (!room.IsUserMember)
+                                        {
+                                            <span class="badge bg-secondary">Not joined</span>
+                                        }
+                                    </div>
+                                    
                                     @if (!string.IsNullOrEmpty(room.Description))
                                     {
                                         <p class="card-text">@room.Description</p>
                                     }
+                                    
+                                    @if (room.LastMessageTime.HasValue)
+                                    {
+                                        <div class="card-text mb-2">
+                                            <small class="text-muted">
+                                                <em>@room.LastMessageTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</em>
+                                                <span class="text-primary">@room.LastMessageSender:</span>
+                                                <br/>
+                                                @(room.LastMessageContent?.Length > 50 ? room.LastMessageContent.Substring(0, 50) + "..." : room.LastMessageContent)
+                                                <br/>
+                                            </small>
+                                        </div>
+                                    }
+                                    
                                     <p class="card-text">
                                         <small class="text-muted">
-                                            Created: @room.CreatedAt.ToString("g")
                                             <br />
-                                            Members: @(room.Members?.Count(m => m.IsActive) ?? 0)
+                                            Members: @room.ActiveMembersCount
                                         </small>
                                     </p>
-                                    <a href="@Url.Action("Index", "Room", new { roomid = room.Id })" class="btn btn-success">
-                                        Enter Room
-                                    </a>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <a href="@Url.Action("Index", "Room", new { roomid = room.Id })" 
+                                           class="btn @(room.IsUserMember ? "btn-success" : "btn-outline-success")">
+                                            @(room.IsUserMember ? "Enter Room" : "View Room")
+                                        </a>
+                                        @if (!room.IsUserMember)
+                                        {
+                                            <a href="@Url.Action("Join", "Rooms", new { roomid = room.Id })" 
+                                               class="btn btn-primary btn-sm">
+                                                Join
+                                            </a>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -51,3 +90,107 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        // 全局 SignalR 连接用于通知
+        let globalConnection = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 创建全局 SignalR 连接
+            globalConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // 监听新消息通知
+            globalConnection.on("NewMessageNotification", (roomId, senderName, messageContent) => {
+                console.log(`New message in room ${roomId} from ${senderName}: ${messageContent}`);
+                // 刷新页面或更新特定房间的未读计数
+                updateRoomUnreadCount(roomId);
+                showNotification(`New message from ${senderName} in room`, messageContent);
+            });
+
+            // 启动连接
+            try {
+                await globalConnection.start();
+                console.log("Global SignalR connection established");
+            } catch (err) {
+                console.error("Failed to establish global SignalR connection:", err);
+                // 重试连接
+                setTimeout(() => {
+                    if (globalConnection.state === signalR.HubConnectionState.Disconnected) {
+                        globalConnection.start();
+                    }
+                }, 5000);
+            }
+
+            // 处理连接断开
+            globalConnection.onclose(async () => {
+                console.log("Global SignalR connection closed. Attempting to reconnect...");
+                setTimeout(() => {
+                    if (globalConnection.state === signalR.HubConnectionState.Disconnected) {
+                        globalConnection.start();
+                    }
+                }, 5000);
+            });
+        });
+
+        // 更新特定房间的未读计数
+        function updateRoomUnreadCount(roomId) {
+            // 重新加载页面以获取最新的未读计数
+            // 在实际应用中，你可能想要使用 AJAX 来仅更新特定房间的计数
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        // 显示通知
+        function showNotification(title, message) {
+            // 检查浏览器是否支持通知
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    new Notification(title, {
+                        body: message.length > 100 ? message.substring(0, 100) + "..." : message,
+                        icon: "/favicon.ico"
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(function (permission) {
+                        if (permission === "granted") {
+                            new Notification(title, {
+                                body: message.length > 100 ? message.substring(0, 100) + "..." : message,
+                                icon: "/favicon.ico"
+                            });
+                        }
+                    });
+                }
+            }
+        }
+
+        // 页面卸载时断开连接
+        window.addEventListener('beforeunload', () => {
+            if (globalConnection && globalConnection.state === signalR.HubConnectionState.Connected) {
+                globalConnection.stop();
+            }
+        });
+    </script>
+}
+
+<style>
+    .card.border-primary {
+        border-width: 2px !important;
+    }
+    
+    .badge {
+        font-size: 0.75em;
+    }
+    
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        max-width: 300px;
+    }
+</style>

@@ -48,6 +48,10 @@ public class RoomController : Controller
         {
             ViewData["CanJoin"] = false;
             ViewData["IsInRoom"] = true;
+            
+            // 用户在房间中，标记所有消息为已读
+            // 这表示用户正在查看房间，应该看到所有消息都已读
+            await _chatService.MarkAllMessagesAsReadAsync(userId, roomid.Value);
         }
 
         ViewData["RoomId"] = room.Id;
@@ -103,5 +107,24 @@ public class RoomController : Controller
 
         var success = await _chatService.LeaveRoomAsync(roomId, userId);
         return Json(new { success });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> MarkAsRead(int roomId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Json(new { success = false, message = "User not authenticated" });
+        }
+
+        // 验证用户ID是否有效
+        if (!await _chatService.IsValidUserAsync(userId))
+        {
+            return Json(new { success = false, message = "Invalid user session" });
+        }
+
+        await _chatService.UpdateLastReadTimeAsync(userId, roomId);
+        return Json(new { success = true });
     }
 }

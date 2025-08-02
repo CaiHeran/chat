@@ -17,6 +17,7 @@ public class ChatDbContext : IdentityDbContext<AppUser>
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<RoomMember> RoomMembers { get; set; }
+    public DbSet<UserRoomReadStatus> UserRoomReadStatuses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -75,6 +76,28 @@ public class ChatDbContext : IdentityDbContext<AppUser>
             entity.HasOne(rm => rm.User)
                   .WithMany()
                   .HasForeignKey(rm => rm.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        // 配置 UserRoomReadStatus 实体
+        builder.Entity<UserRoomReadStatus>(entity =>
+        {
+            entity.HasKey(urrs => urrs.Id);
+            
+            // 确保用户在同一房间只有一个阅读状态记录
+            entity.HasIndex(urrs => new { urrs.UserId, urrs.RoomId })
+                  .IsUnique();
+            
+            // UserRoomReadStatus 与 User 的关系
+            entity.HasOne(urrs => urrs.User)
+                  .WithMany()
+                  .HasForeignKey(urrs => urrs.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  
+            // UserRoomReadStatus 与 Room 的关系
+            entity.HasOne(urrs => urrs.Room)
+                  .WithMany()
+                  .HasForeignKey(urrs => urrs.RoomId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }
