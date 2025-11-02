@@ -56,6 +56,9 @@ public class ChatHub : Hub
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
             await Clients.Caller.SendAsync("JoinedRoom", roomId);
+    
+            // 通知房间内的所有用户有新用户加入（在线状态更新）
+            await Clients.Group(roomId).SendAsync("UserOnlineStatusChanged", roomId);
         }
         else
         {
@@ -67,6 +70,9 @@ public class ChatHub : Hub
     public async Task RemoveFromRoom(string roomId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+      
+        // 通知房间内的所有用户有用户离线
+        await Clients.Group(roomId).SendAsync("UserOnlineStatusChanged", roomId);
     }
 
     // 加入全局通知组（用于接收新消息通知）

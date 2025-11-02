@@ -1,0 +1,84 @@
+@page "/gomoku/{gameId}"
+@model WebServer.Modules.Gomoku.Pages.GomokuPageModel
+@{
+	ViewData["Title"] = "五子棋对局";
+}
+
+<div class="container-fluid">
+	<div class="row h-100">
+		<!-- 棋盘区 -->
+		<div class="col-md-9">
+			<div class="card">
+				<div class="card-header">
+					<h3>五子棋对局</h3>
+					<div id="game-status" class="alert alert-info mt-2" role="alert">
+						加载中...
+					</div>
+				</div>
+				<div class="card-body">
+					<canvas id="gomoku-board" width="600" height="600" style="border:1px solid #ccc;"></canvas>
+				</div>
+				<div class="card-footer">
+					<button id="resign-btn" class="btn btn-danger" disabled>认输</button>
+					<button id="request-state-btn" class="btn btn-secondary">刷新状态</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- 信息区 -->
+		<div class="col-md-3">
+			<div class="card">
+				<div class="card-header">
+					<h5>对局信息</h5>
+				</div>
+				<div class="card-body">
+					<div class="mb-2">
+						<strong>棋盘大小：</strong> <span id="board-size">15×15</span>
+					</div>
+					<div class="mb-2">
+						<strong>黑方（先手）：</strong> <span id="black-player">等待中</span>
+					</div>
+					<div class="mb-2">
+						<strong>白方（后手）：</strong> <span id="white-player">等待中</span>
+					</div>
+					<div class="mb-2">
+						<strong>当前回合：</strong> <span id="current-turn">等待中</span>
+					</div>
+					<div class="mb-2">
+						<strong>落子数：</strong> <span id="move-count">0</span>
+					</div>
+					<hr />
+					<div id="start-game-section">
+						<button id="start-game-btn" class="btn btn-primary w-100" disabled>开始对局</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- 消息区 -->
+			<div class="card mt-3">
+				<div class="card-header">
+					<h5>游戏消息</h5>
+				</div>
+				<div class="card-body" id="message-box" style="max-height:300px; overflow-y: auto;">
+					<!-- 消息会动态添加到这里 -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!--直接在页面内引入并初始化，避免 Scripts section 未渲染导致脚本未加载 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script src="/js/gomoku.js"></script>
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		console.log('Gomoku bootstrap inline');
+		const gameId = '@Model.GameId';
+		const currentUserId = '@Model.CurrentUserId';
+		try {
+			initGomoku(gameId, currentUserId);
+		} catch (e) {
+			console.error('initGomoku error', e);
+		}
+	});
+</script>

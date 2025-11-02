@@ -27,4 +27,12 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="B:\Repositories\chat\WebServer\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="B:\Repositories\chat\WebServer\.editorconfig" />
+  </ItemGroup>
+
 </Project>

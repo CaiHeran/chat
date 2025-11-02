@@ -127,4 +127,33 @@ public class RoomController : Controller
         await _chatService.UpdateLastReadTimeAsync(userId, roomId);
         return Json(new { success = true });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetOnlineMembers(int roomId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Json(new { success = false, message = "User not authenticated" });
+        }
+
+        var isInRoom = await _chatService.IsUserInRoomAsync(roomId, userId);
+        if (!isInRoom)
+        {
+            return Json(new { success = false, message = "User not in room" });
+        }
+
+        var members = await _chatService.GetRoomMembersAsync(roomId);
+        var onlineMembers = members
+            .Where(m => m.IsActive)
+            .Select(m => new 
+   { 
+       id = m.UserId,
+                name = m.User?.UserName ?? "Unknown",
+  email = m.User?.Email ?? ""
+     })
+            .ToList();
+
+        return Json(new { success = true, members = onlineMembers });
+    }
 }

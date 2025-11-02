@@ -1,420 +1,308 @@
 ﻿@using System.Security.Claims
 @model RoomViewModel
 @{
-    ViewData["Title"] = Model.Name;
+	ViewData["Title"] = Model.Name;
 }
 <h3>Room: @Model.Name (@Model.Id)</h3>
 
 @if ((bool?)ViewData["IsInRoom"] == false)
 {
-    <div class="alert alert-info">
-        <p>您还未加入此房间。<button id="joinRoomBtn" class="btn btn-primary btn-sm">加入房间</button></p>
-    </div>
+	<div class="alert alert-info">
+		<p>您还未加入此房间。<button id="joinRoomBtn" class="btn btn-primary btn-sm">加入房间</button></p>
+	</div>
 }
 
-<div id="messagesListContainer" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; height: 300px; overflow-y: scroll;">
-    <h4>Messages:</h4>
-    <ul id="messagesUl">
-        @if (Model.Messages != null && Model.Messages.Any())
-        {
-            @foreach (var message in Model.Messages.OrderBy(m => m.Time))
-            {
-                <li class="message-item" data-message-time="@message.Time.Ticks" data-sender="@message.SenderId">
-                    <strong>@message.SenderName</strong>
-                    <span style="font-size: 0.8em; color: #777;">(@message.Time.ToLocalTime().ToString("g"))</span>:
-                    <p style="margin-left: 10px; margin-top: 0; margin-bottom: 5px; white-space: pre-wrap; word-break: break-word;">@message.Content</p>
-                </li>
-            }
-        }
-        else
-        {
-            <li id="noMessagesLi">No messages in this room yet.</li>
-        }
-    </ul>
+@*只有加入房间后才显示消息与在线成员 *@
+@if ((bool?)ViewData["IsInRoom"] == true)
+{
+<div class="row g-3 mb-3">
+	<div class="col-12 col-md-9">
+		<div id="messagesListContainer" class="border p-2" style="height:300px; overflow-y:auto;">
+			<h4>Messages:</h4>
+			<ul id="messagesUl">
+				@if (Model.Messages != null && Model.Messages.Any())
+				{
+					@foreach (var message in Model.Messages.OrderBy(m => m.Time))
+					{
+						<li class="message-item" data-message-time="@message.Time.Ticks" data-sender="@message.SenderId">
+							<strong>@message.SenderName</strong>
+							<span style="font-size:0.8em; color:#777;">(@message.Time.ToLocalTime().ToString("g"))</span>:
+							<p style="margin-left:10px; margin-top:0; margin-bottom:5px; white-space:pre-wrap; word-break:break-word;">@message.Content</p>
+						</li>
+					}
+				}
+				else
+				{
+					<li id="noMessagesLi">No messages in this room yet.</li>
+				}
+			</ul>
+		</div>
+	</div>
+
+	<!-- 在线成员列表 -->
+	<div class="col-12 col-md-3">
+		<div class="border p-2 rounded" style="height:300px; overflow-y:auto;">
+			<h5 style="margin-top:0;">在线成员</h5>
+			<ul id="onlineMembersList" style="list-style:none; padding:0; margin:0;">
+				<li style="color:#999; font-size:0.9em;">加载中...</li>
+			</ul>
+		</div>
+	</div>
 </div>
+}
 
 @if ((bool?)ViewData["IsInRoom"] == true)
 {
-    <hr />
-    <h4>Send a new message:</h4>
-    <form id="sendMessageForm">
-        <div class="form-group mb-3">
-            <label for="messageInput">Message:</label>
-            <textarea id="messageInput" class="form-control" rows="3" required></textarea>
-        </div>
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary">Send</button>
-            <button type="button" id="leaveRoomBtn" class="btn btn-secondary ms-2">Leave Room</button>
-        </div>
-    </form>
+	<hr />
+
+	<!-- 五子棋游戏区域 -->
+	<div class="card mb-3">
+		<div class="card-header">
+			<h5>🎮 五子棋游戏</h5>
+		</div>
+		<div class="card-body">
+			<div id="gomoku-info" class="alert alert-info mb-2">
+				加载中...
+			</div>
+			<div class="btn-group" role="group">
+				<button type="button" id="create-gomoku-btn" class="btn btn-success">创建新对局</button>
+				<button type="button" id="join-gomoku-btn" class="btn btn-primary" disabled>加入对局</button>
+				<button type="button" id="refresh-gomoku-btn" class="btn btn-secondary">刷新</button>
+			</div>
+		</div>
+	</div>
+
+	<hr />
+	<h4>Send a new message:</h4>
+	<form id="sendMessageForm">
+		<div class="form-group mb-3">
+			<label for="messageInput">Message:</label>
+			<textarea id="messageInput" class="form-control" rows="3" required></textarea>
+		</div>
+		<div class="form-group">
+			<button type="submit" class="btn btn-primary">Send</button>
+			<button type="button" id="leaveRoomBtn" class="btn btn-secondary ms-2">Leave Room</button>
+		</div>
+	</form>
 }
 
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger mt-2">
-        @TempData["ErrorMessage"]
-    </div>
+	<div class="alert alert-danger mt-2">
+		@TempData["ErrorMessage"]
+	</div>
 }
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const roomId = "@Model.Id";
-            const currentUserId = "@User.FindFirstValue(ClaimTypes.NameIdentifier)";
-            const messageInput = document.getElementById('messageInput');
-            const messagesUl = document.getElementById('messagesUl');
-            const messagesListContainer = document.getElementById('messagesListContainer');
-            const noMessagesLi = document.getElementById('noMessagesLi');
-            const joinRoomBtn = document.getElementById('joinRoomBtn');
-            const leaveRoomBtn = document.getElementById('leaveRoomBtn');
-            const sendMessageForm = document.getElementById('sendMessageForm');
-            
-            let isInRoom = @((bool?)ViewData["IsInRoom"] == true ? "true" : "false");
-            let lastMarkAsReadTime = Date.now();
-            let isUserScrolling = false;
-            let lastMessageTime = 0;
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			const roomId = "@Model.Id";
+			const currentUserId = "@User.FindFirstValue(ClaimTypes.NameIdentifier)";
+			const isInRoom = @((bool?)ViewData["IsInRoom"] == true ? "true" : "false");
 
-            // 创建 Intersection Observer 用于检测消息可见性
-            let visibilityObserver = null;
-            
-            if (isInRoom) {
-                visibilityObserver = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const messageElement = entry.target;
-                            const senderId = messageElement.dataset.sender;
-                            const messageTime = parseInt(messageElement.dataset.messageTime);
-                            
-                            // 只处理其他用户的消息
-                            if (senderId !== currentUserId && messageTime > lastMessageTime) {
-                                markMessageAsRead(messageTime);
-                            }
-                        }
-                    });
-                }, {
-                    root: messagesListContainer,
-                    rootMargin: '0px',
-                    threshold: 0.7 // 消息70%可见时才算已读
-                });
-            }
+			const onlineMembersList = document.getElementById('onlineMembersList');
+			const joinRoomBtn = document.getElementById('joinRoomBtn');
+			const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+			const sendMessageForm = document.getElementById('sendMessageForm');
 
-            // 创建 SignalR 连接
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("/chathub")
-                .configureLogging(signalR.LogLevel.Information)
-                .build();
+			const gomokuInfo = document.getElementById('gomoku-info');
+			const createGomokuBtn = document.getElementById('create-gomoku-btn');
+			const joinGomokuBtn = document.getElementById('join-gomoku-btn');
+			const refreshGomokuBtn = document.getElementById('refresh-gomoku-btn');
 
-            // 格式化时间戳
-            function formatTimestamp(timestamp) {
-                return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            }
+			async function refreshOnlineMembers() {
+				if (!onlineMembersList) return;
+				try {
+					const res = await fetch(`/Room/GetOnlineMembers?roomId=${roomId}`, { credentials: 'same-origin' });
+					if (!res.ok) {
+						if (res.status ===403) throw new Error('403 Forbidden - authentication required');
+						throw new Error('Failed to load members');
+					}
+					const data = await res.json();
+					if (data.success && Array.isArray(data.members)) {
+						if (data.members.length ===0) {
+							onlineMembersList.innerHTML = '<li style="color:#999; font-size:0.9em;">暂无成员</li>';
+						} else {
+							onlineMembersList.innerHTML = data.members.map(m => `\n							<li style="padding:5px0; border-bottom:1px solid #eee; font-size:0.9em;">${m.name}${m.id === currentUserId ? ' <span style="color:#28a745; font-size:0.8em;">(你)</span>' : ''}</li>`).join('');
+						}
+					}
+				} catch (err) {
+					onlineMembersList.innerHTML = '<li style="color:#dc3545; font-size:0.9em;">加载失败</li>';
+					console.error(err);
+				}
+			}
 
-            // 检查用户是否在底部附近（用于判断是否自动滚动）
-            function isNearBottom() {
-                const threshold = 80; // 80px 容差
-                return messagesListContainer.scrollHeight - messagesListContainer.clientHeight - messagesListContainer.scrollTop <= threshold;
-            }
+			async function refreshGomokuBox() {
+				if (!gomokuInfo) return;
+				try {
+					gomokuInfo.textContent = '加载中...';
+					const res = await fetch(`/api/gomoku/room/${roomId}/active`, { credentials: 'same-origin' });
+					if (!res.ok) throw new Error('加载失败');
+					const data = await res.json();
+					if (data.hasGame) {
+						const state = data.state;
+						const black = state.blackPlayerId ? state.blackPlayerId.substring(0,8) + '...' : '等待黑方';
+						const white = state.whitePlayerId ? state.whitePlayerId.substring(0,8) + '...' : '等待白方';
+						const statusText = state.status ===0 ? '等待中' : state.status ===1 ? '进行中' : '已结束';
+						gomokuInfo.className = 'alert alert-info mb-2';
+						gomokuInfo.innerHTML = `当前对局：<strong>${statusText}</strong> · 黑方：${black} · 白方：${white}`;
+						if (joinGomokuBtn) { joinGomokuBtn.disabled = false; joinGomokuBtn.dataset.gameId = state.id; }
+					} else {
+						gomokuInfo.className = 'alert alert-warning mb-2';
+						gomokuInfo.textContent = '当前房间没有活动对局。你可以创建一个新对局。';
+						if (joinGomokuBtn) { joinGomokuBtn.disabled = true; delete joinGomokuBtn.dataset.gameId; }
+					}
+				} catch (err) {
+					gomokuInfo.className = 'alert alert-danger mb-2';
+					gomokuInfo.textContent = '加载五子棋状态失败';
+					console.error(err);
+				}
+			}
 
-            // 检查新消息是否应该触发自动滚动
-            function shouldAutoScrollToNewMessage() {
-                // 如果用户正在主动滚动，不要干扰
-                if (isUserScrolling) return false;
-                
-                // 只有当用户在底部附近时才自动滚动
-                return isNearBottom();
-            }
+			refreshGomokuBtn?.addEventListener('click', refreshGomokuBox);
+			refreshGomokuBox();
+			refreshOnlineMembers();
+			setInterval(refreshOnlineMembers,5000);
 
-            // 标记特定时间的消息为已读
-            function markMessageAsRead(messageTime) {
-                if (!isInRoom) return;
-                
-                const now = Date.now();
-                // 防抖：1秒内最多发送一次请求
-                if (now - lastMarkAsReadTime > 1000) {
-                    lastMarkAsReadTime = now;
-                    lastMessageTime = Math.max(lastMessageTime, messageTime);
-                    
-                    fetch('/Room/MarkAsRead', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                        },
-                        body: JSON.stringify({ roomId: parseInt(roomId) })
-                    }).catch(error => {
-                        console.error('Error marking messages as read:', error);
-                    });
-                }
-            }
+			// SignalR + messaging only when in room
+			if (isInRoom === "true") {
+				const messageInput = document.getElementById('messageInput');
+				const messagesUl = document.getElementById('messagesUl');
+				const messagesListContainer = document.getElementById('messagesListContainer');
+				const noMessagesLi = document.getElementById('noMessagesLi');
 
-            // 将新消息附加到列表的函数
-            function appendMessage(user, message, timestamp, senderId = null) {
-                // 在添加新消息之前，先检查用户是否在原先的底部附近
-                const wasNearBottom = shouldAutoScrollToNewMessage();
-                
-                if (noMessagesLi) {
-                    noMessagesLi.style.display = 'none';
-                }
+				let lastMarkAsReadTime = Date.now();
+				let isUserScrolling = false;
+				let lastMessageTime =0;
 
-                const li = document.createElement("li");
-                li.className = "message-item";
-                li.dataset.messageTime = new Date(timestamp).getTime();
-                li.dataset.sender = senderId || "unknown";
+				let visibilityObserver = null;
+				if (messagesListContainer) {
+					visibilityObserver = new IntersectionObserver(entries => {
+						entries.forEach(entry => {
+							if (entry.isIntersecting) {
+								const el = entry.target;
+								const senderId = el.dataset.sender;
+								const messageTime = parseInt(el.dataset.messageTime,10);
+								if (senderId !== currentUserId && messageTime > lastMessageTime) markMessageAsRead(messageTime);
+							}
+						});
+					}, { root: messagesListContainer, rootMargin: '0px', threshold:0.7 });
+				}
 
-                const strong = document.createElement("strong");
-                strong.textContent = user;
+				function formatTimestamp(ts) { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+				function isNearBottom() { if (!messagesListContainer) return true; const threshold =80; return messagesListContainer.scrollHeight - messagesListContainer.clientHeight - messagesListContainer.scrollTop <= threshold; }
+				function shouldAutoScrollToNewMessage() { if (isUserScrolling) return false; return isNearBottom(); }
 
-                const timeSpan = document.createElement("span");
-                timeSpan.style.fontSize = "0.8em";
-                timeSpan.style.color = "#777";
-                timeSpan.textContent = ` (${formatTimestamp(timestamp)})`;
+				function markMessageAsRead(messageTime) {
+					const now = Date.now();
+					if (now - lastMarkAsReadTime >1000) {
+						lastMarkAsReadTime = now;
+						lastMessageTime = Math.max(lastMessageTime, messageTime);
+						fetch('/Room/MarkAsRead', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }, body: JSON.stringify({ roomId: parseInt(roomId,10) }) }).catch(() => {});
+					}
+				}
 
-                const p = document.createElement("p");
-                p.style.marginLeft = "10px";
-                p.style.marginTop = "0";
-                p.style.marginBottom = "5px";
-                p.style.whiteSpace = "pre-wrap"; // 保持换行和空格
-                p.style.wordBreak = "break-word"; // 长单词换行
-                // 使用 textContent 设置文本，浏览器会自动处理换行符
-                p.textContent = message;
+				function appendMessage(user, message, timestamp, senderId = null) {
+					const wasNear = shouldAutoScrollToNewMessage();
+					if (noMessagesLi) noMessagesLi.style.display = 'none';
+					const li = document.createElement('li');
+					li.className = 'message-item';
+					li.dataset.messageTime = new Date(timestamp).getTime();
+					li.dataset.sender = senderId || 'unknown';
+					li.innerHTML = `<strong>${user}</strong> <span style="font-size:0.8em;color:#777;">(${formatTimestamp(timestamp)})</span>:<p style="margin-left:10px;margin-top:0;margin-bottom:5px;white-space:pre-wrap;word-break:break-word;">${message}</p>`;
+					messagesUl.appendChild(li);
+					if (wasNear) li.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					if (visibilityObserver && senderId !== currentUserId) visibilityObserver.observe(li);
+					if (senderId !== currentUserId) setTimeout(() => { const rect = li.getBoundingClientRect(); const containerRect = messagesListContainer.getBoundingClientRect(); if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom) markMessageAsRead(new Date(timestamp).getTime()); },100);
+				}
 
-                li.appendChild(strong);
-                li.appendChild(timeSpan);
-                li.appendChild(document.createTextNode(": "));
-                li.appendChild(p);
-                messagesUl.appendChild(li);
+				let scrollTimeout;
+				if (messagesListContainer) {
+					messagesListContainer.addEventListener('scroll', () => { isUserScrolling = true; clearTimeout(scrollTimeout); scrollTimeout = setTimeout(() => { isUserScrolling = false; },1500); });
+					messagesListContainer.addEventListener('mousedown', () => { isUserScrolling = true; clearTimeout(scrollTimeout); scrollTimeout = setTimeout(() => { isUserScrolling = false; },2000); });
+					messagesListContainer.addEventListener('wheel', () => { isUserScrolling = true; clearTimeout(scrollTimeout); scrollTimeout = setTimeout(() => { isUserScrolling = false; },1500); });
+				}
 
-                // 根据之前检查的结果决定是否滚动
-                if (wasNearBottom) {
-                    if (senderId === currentUserId) {
-                        // 自己的消息：滚动到底部
-                        messagesListContainer.scrollTo({
-                            top: messagesListContainer.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    } else {
-                        // 其他人的消息：滚动到新消息的开头
-                        li.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'  // 滚动到元素的开头
-                        });
-                    }
-                }
+				const connection = new signalR.HubConnectionBuilder().withUrl('/chathub').configureLogging(signalR.LogLevel.Information).build();
 
-                // 为新消息设置可见性观察
-                if (isInRoom && visibilityObserver && senderId !== currentUserId) {
-                    visibilityObserver.observe(li);
-                }
+				connection.on('ReceiveMessage', (user, message, timestamp, senderId) => appendMessage(user, message, timestamp, senderId));
+				connection.on('UserJoined', (userName, timestamp) => { appendMessage('System', `${userName} joined the room`, timestamp, 'system'); refreshOnlineMembers(); });
+				connection.on('UserLeft', (userName, timestamp) => { appendMessage('System', `${userName} left the room`, timestamp, 'system'); refreshOnlineMembers(); });
+				connection.on('UserOnlineStatusChanged', () => refreshOnlineMembers());
+				connection.on('Error', err => { console.error('SignalR Error:', err); if (typeof err === 'string' && (err.includes('Invalid user session') || err.includes('User not authenticated'))) { alert('Your session has expired. Please log in again.'); window.location.href = '/Identity/Account/Logout'; } else { alert('Error: ' + err); } });
 
-                // 如果消息立即可见，标记为已读
-                if (senderId !== currentUserId) {
-                    setTimeout(() => {
-                        const rect = li.getBoundingClientRect();
-                        const containerRect = messagesListContainer.getBoundingClientRect();
-                        
-                        if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom) {
-                            markMessageAsRead(new Date(timestamp).getTime());
-                        }
-                    }, 100);
-                }
-            }
+				async function startConnection() { try { await connection.start(); await connection.invoke('AddToRoom', roomId); } catch (e) { setTimeout(startConnection,5000); } }
+				connection.onclose(() => startConnection());
+				startConnection();
 
-            // 监听用户滚动状态
-            let scrollTimeout;
-            messagesListContainer.addEventListener('scroll', () => {
-                isUserScrolling = true;
-                clearTimeout(scrollTimeout);
-                // 用户停止滚动后稍等一段时间再允许自动滚动
-                scrollTimeout = setTimeout(() => {
-                    isUserScrolling = false;
-                }, 1500); // 1.5秒，比较合理的时间
-            });
+				if (visibilityObserver) document.querySelectorAll('.message-item').forEach(el => { const senderId = el.dataset.sender; if (senderId !== currentUserId) visibilityObserver.observe(el); });
 
-            // 监听用户交互，暂停自动滚动
-            messagesListContainer.addEventListener('mousedown', () => {
-                isUserScrolling = true;
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    isUserScrolling = false;
-                }, 2000); // 鼠标交互后2秒内不自动滚动
-            });
+				if (sendMessageForm && messageInput) {
+					sendMessageForm.addEventListener('submit', async (ev) => {
+						ev.preventDefault();
+						const message = messageInput.value.replace(/\s+$/g, '');
+						if (!message) return;
+						if (connection.state === signalR.HubConnectionState.Connected) {
+							try { await connection.invoke('SendMessageToRoom', roomId, message); messageInput.value = ''; messageInput.focus(); } catch (err) { alert('Error sending message. Please try again.'); }
+						} else { alert('Not connected to chat server. Please wait or refresh.'); }
+					});
+				}
 
-            // 监听滚轮事件
-            messagesListContainer.addEventListener('wheel', () => {
-                isUserScrolling = true;
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    isUserScrolling = false;
-                }, 1500);
-            });
+				if (leaveRoomBtn) {
+					leaveRoomBtn.addEventListener('click', async () => {
+						if (!confirm('Are you sure you want to leave this room?')) return;
+						try {
+							const res = await fetch('/Room/LeaveRoom', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }, body: JSON.stringify({ roomId: parseInt(roomId,10) }) });
+							const result = await res.json(); if (result.success) window.location.href = '/Rooms'; else alert('Failed to leave room');
+						} catch (err) { alert('Error leaving room'); }
+					});
+				}
+			}
 
-            // SignalR 事件处理
-            connection.on("ReceiveMessage", (user, message, timestamp, senderId) => {
-                appendMessage(user, message, timestamp, senderId);
-            });
+			// join button available always
+			if (joinRoomBtn) {
+				joinRoomBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch('/Room/JoinRoom', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }, body: JSON.stringify({ roomId: parseInt(roomId,10) }) });
+						const result = await res.json(); if (result.success) location.reload(); else alert('Failed to join room: ' + result.message);
+					} catch (err) { alert('Error joining room'); }
+				});
+			}
 
-            connection.on("UserJoined", (userName, timestamp) => {
-                appendMessage("System", `${userName} joined the room`, timestamp, "system");
-            });
+			// gomoku buttons that don't require being in room
+			createGomokuBtn?.addEventListener('click', async () => {
+				try {
+					const res = await fetch('/api/gomoku/create', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId: parseInt(roomId,10) }) });
+					if (res.ok) { const data = await res.json(); window.location.href = `/gomoku/${data.gameId}`; } else { const err = await res.json(); alert('创建对局失败: ' + (err?.message || '')); }
+				} catch (err) { alert('创建对局出错'); }
+			});
 
-            connection.on("UserLeft", (userName, timestamp) => {
-                appendMessage("System", `${userName} left the room`, timestamp, "system");
-            });
+			joinGomokuBtn?.addEventListener('click', async () => {
+				const gameId = joinGomokuBtn?.dataset?.gameId;
+				if (!gameId) { alert('没有可加入的对局'); return; }
+				try {
+					const res = await fetch('/api/gomoku/join', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) });
+					if (res.ok) { const data = await res.json(); window.location.href = `/gomoku/${data.gameId}`; } else { const err = await res.json(); alert('加入对局失败: ' + (err?.message || '')); }
+				} catch (err) { alert('加入对局出错'); }
+			});
 
-            connection.on("Error", (errorMessage) => {
-                console.error("SignalR Error:", errorMessage);
-                
-                // 如果是认证错误，重定向到登录页面
-                if (errorMessage.includes("Invalid user session") || 
-                    errorMessage.includes("User not authenticated")) {
-                    alert("Your session has expired. Please log in again.");
-                    window.location.href = "/Identity/Account/Logout";
-                } else {
-                    alert("Error: " + errorMessage);
-                }
-            });
-
-            // 启动连接
-            async function startConnection() {
-                try {
-                    await connection.start();
-                    console.log("SignalR Connected.");
-                    if (isInRoom) {
-                        await connection.invoke("AddToRoom", roomId);
-                        console.log(`Joined room: ${roomId}`);
-                    }
-                } catch (err) {
-                    console.error("SignalR Connection Error: ", err);
-                    setTimeout(startConnection, 5000);
-                }
-            }
-
-            connection.onclose(async () => {
-                console.log("SignalR connection closed. Attempting to reconnect...");
-                await startConnection();
-            });
-
-            startConnection();
-
-            // 初始化现有消息的可见性观察
-            if (isInRoom && visibilityObserver) {
-                document.querySelectorAll('.message-item').forEach(messageElement => {
-                    const senderId = messageElement.dataset.sender;
-                    if (senderId !== currentUserId) {
-                        visibilityObserver.observe(messageElement);
-                    }
-                });
-            }
-
-            // 加入房间按钮
-            if (joinRoomBtn) {
-                joinRoomBtn.addEventListener('click', async () => {
-                    try {
-                        const response = await fetch(`/Room/JoinRoom`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                            },
-                            body: JSON.stringify({ roomId: parseInt(roomId) })
-                        });
-                        
-                        const result = await response.json();
-                        if (result.success) {
-                            location.reload();
-                        } else {
-                            alert('Failed to join room: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error joining room:', error);
-                        alert('Error joining room');
-                    }
-                });
-            }
-
-            // 离开房间按钮
-            if (leaveRoomBtn) {
-                leaveRoomBtn.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to leave this room?')) {
-                        try {
-                            const response = await fetch(`/Room/LeaveRoom`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                                },
-                                body: JSON.stringify({ roomId: parseInt(roomId) })
-                            });
-                            
-                            const result = await response.json();
-                            if (result.success) {
-                                window.location.href = '/Rooms';
-                            } else {
-                                alert('Failed to leave room');
-                            }
-                        } catch (error) {
-                            console.error('Error leaving room:', error);
-                            alert('Error leaving room');
-                        }
-                    }
-                });
-            }
-
-            // 发送消息表单
-            if (sendMessageForm) {
-                sendMessageForm.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-
-                    // 获取原始消息内容，只移除结尾空白，保留内部换行符
-                    const message = messageInput.value.replace(/\s+$/g, '');
-                    if (!message) return;
-
-                    if (connection.state === signalR.HubConnectionState.Connected) {
-                        try {
-                            await connection.invoke("SendMessageToRoom", roomId, message);
-                            messageInput.value = "";
-                            messageInput.focus();
-                        } catch (err) {
-                            console.error("Error sending message via SignalR: ", err);
-                            alert("Error sending message. Please try again.");
-                        }
-                    } else {
-                        alert("Not connected to chat server. Please wait or refresh.");
-                    }
-                });
-            }
-
-            // 页面加载时滚动到底部
-            if (isInRoom && messagesUl.children.length > 0 && (!noMessagesLi || noMessagesLi.style.display === 'none')) {
-                // 页面加载时直接滚动到底部，无动画
-                setTimeout(() => {
-                    messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
-                }, 100);
-            }
-
-            // 页面卸载时清理观察器
-            window.addEventListener('beforeunload', () => {
-                if (visibilityObserver) {
-                    visibilityObserver.disconnect();
-                }
-            });
-        });
-    </script>
+		});
+	</script>
 }
 
 <style>
-    .message-item {
-        transition: background-color 0.3s ease;
-    }
-    
-    .message-item.new-message {
-        background-color: #f8f9fa;
-        border-left: 3px solid #007bff;
-        padding-left: 10px;
-    }
-    
-    #messagesListContainer {
-        scroll-behavior: smooth;
-    }
+	.message-item {
+		transition: background-color 0.3s ease;
+	}
+
+	.message-item.new-message {
+		background-color: #f8f9fa;
+		border-left:3px solid #007bff;
+		padding-left:10px;
+	}
+
+	#messagesListContainer {
+		scroll-behavior: smooth;
+	}
 </style>

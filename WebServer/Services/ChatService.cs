@@ -266,6 +266,15 @@ public class ChatService
             .AnyAsync(rm => rm.RoomId == roomId && rm.UserId == userId && rm.IsActive);
     }
 
+    // 获取房间成员列表
+    public async Task<List<RoomMember>> GetRoomMembersAsync(int roomId)
+    {
+        return await _context.RoomMembers
+     .Where(rm => rm.RoomId == roomId && rm.IsActive)
+      .Include(rm => rm.User)
+    .ToListAsync();
+    }
+
     // 验证用户ID是否在数据库中存在（安全检查）
     public async Task<bool> IsValidUserAsync(string userId)
     {
